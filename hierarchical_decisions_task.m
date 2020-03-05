@@ -4,8 +4,8 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
 % run = up to 5 runs per session - ~10min per run
 
 NoEyelink = 1; %is Eyelink wanted?
-debug   = 1; % debug mode => 1: transparent window enabling viewing the background.
-small_window = 1; % Open a small window only
+debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
+small_window = 0; % Open a small window only
 
 %% >>>>> Set up a lot of stuff
 % Load stimulus sequence
