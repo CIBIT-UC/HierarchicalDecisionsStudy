@@ -3,7 +3,6 @@ rng('shuffle'); % to be really random!
 % NoEyelink = 1; %is Eyelink wanted?
 debug   = 0; %debug mode => 1: transparent window enabling viewing the background.
 small_window = 0; % Open a small window only
-% number_of_trials = 100; %size(seq.stim, 2)
 
 %% >>>>> Set up a lot of stuff
 abort = false; % 
@@ -124,7 +123,7 @@ while 1
             key_pressed = KbName(keyCode);
             text = ['Nos momentos assinalados pelo círculo amarelo terá de indicar que conjunto \n', ... 
                 'estava ativo imediatamente antes usando o teclado.\n\n'...
-                'Responda com a mão direita usando as setas esquerda e baixo,\n'... 
+                'Responda com a mão direita usando as setas esquerda e cima,\n'... 
                 'para indicar que conjunto estava ativo.\n\n'...
                 'Mantenha o olhar fixo na imagem central e observe os pontos com a visão periferica. \n\n', ...
                 'Carregue numa tecla para avançar.'];
@@ -399,7 +398,7 @@ while 1
             %% Hierarchical decisions training 
             % PHASE 6 and 7
             % use lower SNR - distributions closer together
-            block = 2; arrow = 0; count = 0; 
+            block = 2; arrow = 0; %count = 0; 
             text = ['A partir daqui as respostas terão em conta não só qual o conjunto gerador ativo,\n'...
                         'mas também qual a imagem que aparece a indicar que tem de tomar uma decisão.\n\n'...
                         'Essa imagem pode ser uma cara ou uma casa.\n\n'...
@@ -451,7 +450,7 @@ while 1
                             p.seq.phase6_no_color{run_no_colour} = seq;
                         end
                         
-                        if (coloured_task == 1 && run_colour>=1) ||  (coloured_task == 0 && run_no_colour>=1)
+                        if (coloured_task == 1 && run_colour>1) ||  (coloured_task == 0 && run_no_colour>1)
                             % show rule to remind participant on second try
                             rule_explained(p, rule_hierarchical_decision); KbStrokeWait(p.ptb.device);
                         end
@@ -476,8 +475,7 @@ while 1
                         for numb_files=1:number_house_stim
                             p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_houses(numb_files)).folder, Files(file_order_houses(numb_files)).name);
                         end
-    %                     starting_rule = 0;
-    %                     p.choice_trials.active_rule = starting_rule; % to counterbalance across runs      
+
                         draw_fix(p);
                         correct = 0; trial_number = 0;
                         count_faces = 0; count_houses = 0; % to determine which image to show
@@ -1072,7 +1070,7 @@ end
         img_size = 300;
         % Here we load in an image from file.
         % face image
-        theImageLocation = [p.images_dir, '\selected_faces_children\child-3.jpg'];
+        theImageLocation = [p.images_dir, '\child-3.jpg'];
         theImage_face = imread(theImageLocation);
         % Make the image into a texture
         imageTexture_face = Screen('MakeTexture', p.ptb.w, theImage_face);
@@ -1167,7 +1165,7 @@ end
                                        'Carregue numa tecla para avançar.'];
                                     end
                                 elseif gener_side >0 && stim_id ==1 % bottom and houses 
-                                    if strcmp(keys, 'x')
+                                    if strcmp(keys, 'z')
                                        correct_trial = 1;
                                        text = ['Correto! \n', ...  
                                        'Era a distribuição de baixo que estava ativa.\n\n', ...
@@ -1202,7 +1200,7 @@ end
                                 end
                             elseif rule == 1    
                                  if gener_side > 0 && stim_id == 0 % bottom and faces
-                                    if strcmp(keys, 'x')
+                                    if strcmp(keys, 'z')
                                        correct_trial = 1;
                                        text = ['Correto! \n', ...  
                                        'Era a distribuição de baixo que estava ativa.\n\n', ...
@@ -1250,7 +1248,7 @@ end
                         end
                     end
                 else
-                   text = ['Nao respondeu ou resposta lenta de mais.\n\n', ...
+                   text = ['Não respondeu ou resposta lenta de mais.\n\n', ...
                            'Carregue numa tecla para avançar.'];
                 end
     end
