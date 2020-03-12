@@ -69,7 +69,7 @@ while 1
         coloured_task = 1; block = 1; number_of_trials = 100;%200;
         p = inference_task(p, coloured_task, block, number_of_trials); % PHASE 2 - coloured task with choice trials
 
-        coloured_task = 0; number_of_trials = 100;%400;
+        coloured_task = 0; number_of_trials = 400;
         for block = 1:2 % first easy then difficult condition - PHASE 3 and phase 4
             draw_fix(p); 
             Screen('Flip', p.ptb.w);
@@ -126,13 +126,13 @@ while 1
         end 
         %% hierarchical decisions training phase
         block = 2; % use lower SNR - distributions closer together
-        number_of_trials = 100;
+        number_of_trials = 400;
         p = hierarchical_decisions_training_phase(p, block, number_of_trials);
     
     else
         %% hierarchical decisions training phase
         block = 2; % use lower SNR - distributions closer together
-        number_of_trials = 100;
+        number_of_trials = 400;
         p = hierarchical_decisions_training_phase(p, block, number_of_trials);
     end
 
