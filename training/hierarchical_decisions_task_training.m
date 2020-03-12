@@ -1,4 +1,4 @@
-function [p]=hierarchical_decisions_task_training(subject, rule_hierarchical_decision)
+function [p]=hierarchical_decisions_task_training(subject, rule_hierarchical_decision, start_phase)
 rng('shuffle'); % to be really random!
 % NoEyelink = 1; %is Eyelink wanted?
 debug   = 0; %debug mode => 1: transparent window enabling viewing the background.
@@ -27,7 +27,7 @@ Screen('TextStyle', p.ptb.w, 1);
 % SNR = 1
 
 while 1
-    location_of_mean = [0.5, 0.25]; sd = [0.5, 0.5];
+    p.location_of_mean = [0.5, 0.25]; p.sd = [0.5, 0.5];
 
     text = ['Por favor, desligue ou tire o som ao telemovel. \n'...
         'Obrigada!\n\n', ...
@@ -37,510 +37,111 @@ while 1
     [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
     key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
 
-    % show image with example of samples from both distributions
-    text = 'Dois conjuntos geradores de pontos.';
-    DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
-    text = 'Carregue numa tecla para avançar.';
-    DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
-    % Here we load in an image from file.
-    theImageLocation = [pwd, '\generative_processes_easy_3.jpg'];
-    theImage_example = imread(theImageLocation);
-    % Make the image into a texture
-    imageTexture_example = Screen('MakeTexture', p.ptb.w, theImage_example);
-    Screen('DrawTexture', p.ptb.w, imageTexture_example);
-    Screen('Flip', p.ptb.w);
-    [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-    key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
-    % Screen('Flip', p.ptb.w);
-    block = 1;% easy version
-            % PHASE 1 - example of bottom distribution
-            text = ['Sequência de pontos com origem no conjunto inferior. \n\n'...
+    if start_phase == 1
+    
+        show_probability_distributions(p); % explain data distributions
+
+        WaitSecs(1);
+        Screen('Flip', p.ptb.w);
+
+        % PHASE 2 - show samples from alternating
+        % distributions with choice trials - coloured samples
+        text = ['A seguir vamos observar uma sequência de pontos gerados pelos dois conjuntos.\n', ... 
+            'As cores indicam quando as alternâncias ocorrem. \n'...
+            'Verde = conjunto superior. Azul = conjunto inferior.\n'...
+            'Preste atenção à posição dos pontos. \n\n'...
+            'Carregue numa tecla para avançar.'];
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip', p.ptb.w);
+        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+        key_pressed = KbName(keyCode);
+        text = ['Nos momentos assinalados pelo círculo amarelo terá de indicar que conjunto \n', ... 
+            'estava ativo imediatamente antes usando o teclado.\n\n'...
+            'Responda com a mão direita usando as setas esquerda e cima,\n'... 
+            'para indicar que conjunto estava ativo.\n\n'...
+            'Mantenha o olhar fixo na imagem central e observe os pontos com a visão periférica. \n\n', ...
+            'Carregue numa tecla para avançar.'];
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip', p.ptb.w);
+        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+        key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
+        draw_fix(p); 
+        coloured_task = 1; block = 1; number_of_trials = 100;%200;
+        p = inference_task(p, coloured_task, block, number_of_trials); % PHASE 2 - coloured task with choice trials
+
+        coloured_task = 0; number_of_trials = 100;%400;
+        for block = 1:2 % first easy then difficult condition - PHASE 3 and phase 4
+            draw_fix(p); 
+            Screen('Flip', p.ptb.w);
+            % show samples from alternating distributions with choice trials
+            if block ==1 % PHASE 3
+                text = ['Vamos observar uma sequência de pontos gerados alternadamente \n', ... 
+                    'pelos dois conjuntos. Desta vez os pontos têm todos a mesma cor. \n\n', ...
+                    'Terá de inferir quando houve mudança do conjunto gerador\n'... 
+                    'através da análise das posições dos pontos. \n\n'...
                     'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
-            draw_fix(p); coloured_task = 1;
-    %         [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
-            [seq,~] = make_glaze_block_training_sequences(25, sd(block), location_of_mean(block), 0, 1);
-            ActSampleOnset = GetSecs; p.seq.phase1 = seq;
-             for trial  = 1:25
-                %Get the variables that Trial function needs.
-                stim_id       = seq.stim(trial);
-                type          = seq.type(trial);
-                location      = seq.sample(trial);
-                gener_side    = seq.generating_side(trial);
-                OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
-                % Show a single sample
-                arrow = 0;
-                [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
-             end
-
-             WaitSecs(1);
-             Screen('Flip', p.ptb.w);
-            % notice that and second phase - example of top distribution
-            text = ['Note que na sequência anterior apesar da maioria dos pontos se encontrarem \n'...
-                'a baixo da cruz de fixação, alguns apareceram acima da cruz de fixação.\n\n', ...
-                'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
-            % PHASE 2
-            text = ['A seguir vamos apresentar uma sequência de pontos com origem no conjunto superior.\n\n', ...
-                'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode);
-            draw_fix(p); coloured_task = 1;
-    %       [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
-            [seq,~] = make_glaze_block_training_sequences(25, sd(block), location_of_mean(block), 0, -1);
-            ActSampleOnset = GetSecs; p.seq.phase2 = seq;
-             for trial  = 1:25
-                %Get the variables that Trial function needs.
-                stim_id       = seq.stim(trial);
-                type          = seq.type(trial);
-                location      = seq.sample(trial);
-                gener_side    = seq.generating_side(trial);
-                OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
-                % Show a single sample
-                [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
-             end
-
-            WaitSecs(1);
-            Screen('Flip', p.ptb.w);
-            % PHASE 3 - show samples from alternating
-            % distributions with choice trials - coloured samples
-            text = ['A seguir vamos observar uma sequência de pontos gerados pelos dois conjuntos.\n', ... 
-                'As cores indicam quando as alternâncias ocorrem. \n'...
-                'Verde = conjunto superior. Azul = conjunto inferior.\n'...
-                'Preste atenção à posição dos pontos. \n\n'...
-                'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode);
-            text = ['Nos momentos assinalados pelo círculo amarelo terá de indicar que conjunto \n', ... 
-                'estava ativo imediatamente antes usando o teclado.\n\n'...
-                'Responda com a mão direita usando as setas esquerda e cima,\n'... 
-                'para indicar que conjunto estava ativo.\n\n'...
-                'Mantenha o olhar fixo na imagem central e observe os pontos com a visão periferica. \n\n', ...
-                'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-%             % draw 2 arrows indicating which key to press
-%             % create a triangle - p.ptb.CrossPosition_y-400 - [p.ptb.width, p.ptb.height]
-%             head   = [ p.ptb.CrossPosition_x-(p.ptb.width/3), p.ptb.CrossPosition_y]; % coordinates of head
-%             width  = 75;           % width of arrow head
-%            points = [ head-[width/2, 0];        %left corner
-%                        head-[0, width];         % top corner
-%                        head+[width/2,0] ];      %right corner
-% 
-%             Screen('FillPoly', p.ptb.w,[200,200,200], points); % arrow signaling which key to press
-% 
-%             head   = [ p.ptb.CrossPosition_x+(p.ptb.width/3), p.ptb.CrossPosition_y]; % coordinates of head
-%     %         width  = 75;           % width of arrow head
-%            points = [ head+[-width/2, -width];        %left corner
-%                        head;         % top corner
-%                        head+[width/2,-width] ];      %right corner
-% 
-%             Screen('FillPoly', p.ptb.w,[200,200,200], points); % arrow signaling which key to press
-
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
-            draw_fix(p); coloured_task = 1;
-
-            correct = 0; trial_number = 0;
-            keys_repeat_training = {'i'}; run = 0;
-         while strcmp(keys_repeat_training, 'i')
-                run = run+1;
-            %         [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
-            [seq,~] = make_glaze_block_training_sequences(300, sd(block), location_of_mean(block), 1, 0);
-            ActSampleOnset = GetSecs; p.seq.phase3{run} = seq;
-             for trial  = 1:200
-
-                %Get the variables that Trial function needs.
-                stim_id       = seq.stim(trial);
-                type          = seq.type(trial);
-                location      = seq.sample(trial);
-                gener_side    = seq.generating_side(trial);
-                OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
-
-                if type == 0 % Show a single sample
-                    arrow = 0;
-                    [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
-                elseif type == 1 % Choice trial.
-                    trial_number = trial_number+1;
-                    [p, response] = visual_cue_trial(p);
-
-                    if gener_side>0 && response == 1
-                       correct = correct+1;
-                       text = ['Correto! \n', ...  
-                           'Era a distribuição de baixo que estava ativa.\n\n', ...
-                           'Carregue numa tecla para avançar.'];
-                    elseif gener_side<0 && response == 0
-                        correct = correct+1;
-                        text = ['Correto! \n', ... 
-                            'Era a distribuição de cima que estava ativa.\n\n', ...
-                           'Carregue numa tecla para avançar.'];
-                    elseif gener_side>0 && response == 0
-                       text = ['Errado! \n', ...  
-                           'Era a distribuição de baixo que estava ativa.\n\n', ...
-                           'Carregue numa tecla para avançar.'];
-                    elseif gener_side<0 && response == 1
-                       text = ['Errado! \n', ...  
-                           'Era a distribuição de cima que estava ativa.\n\n', ...
-                           'Carregue numa tecla para avançar.'];
-                    else
-                       text = ['Carregou na tecla errada.\n\n', ...
-                           'Carregue numa tecla para avançar.'];
-                    end
-                    DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-                    Screen('Flip', p.ptb.w);
-                    [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-                    key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
-                    ActSampleOnset = GetSecs;
-                end
-                p = dump_keys(p);
-
-                if abort
-                    break
-                end
-
-             end
-
-            % feedback
-            Screen('Flip', p.ptb.w); % clear fixation cross
-            % save accuracy on p variable
-            p.accuracy.phase3_easy_coloured{run} = correct/trial_number;
-
-            text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
-                'Se pretende repetir o bloco pressione a tecla I, para avançar pressione a tecla P.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-
-            % record responses
-            while 1
-                [secs, keyStateVec] = KbWait((p.ptb.device), 2);
-
-                keycodes=find(keyStateVec==1);
-                keys_repeat_training = KbName(keycodes(1));
-                if strcmp(keys_repeat_training, 'q') || strcmp(keys_repeat_training, 'p') || strcmp(keys_repeat_training, 'i')
-                    break
-                end
-            end
-        end
-            p = dump_keys(p);
-
-        for block = 1:2 % first easy then difficult condition - PHASE 4 AND 5
-
-            keys_repeat_training = {'i'}; run = 0;
-            while strcmp(keys_repeat_training, 'i')
-                run = run+1;
-                Screen('Flip', p.ptb.w);
-
-                % show samples from alternating distributions with choice trials
-                if block ==1 % PHASE 4
-                    text = ['Vamos observar uma sequência de pontos gerados alternadamente \n', ... 
-                        'pelos dois conjuntos. Desta vez os pontos têm todos a mesma cor. \n\n', ...
-                        'Terá de inferir quando houve mudança do conjunto gerador\n'... 
-                        'através da análise das posições dos pontos. \n\n'...
-                        'Carregue numa tecla para avançar.'];
-                    DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-                    Screen('Flip', p.ptb.w);
-                    [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-                    key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
-                elseif block ==2 % two distribution closer together - more difficult version of task - PHASE 5
-                    text = ['Agora vamos fazer a tarefa mais difícil.\n'...
-                    'A partir de agora os conjuntos que geram os pontos\n'... 
-                    'vão estar mais sobrepostos.\n\n', ...
-                    'Carregue numa tecla para avançar.'];
-                    DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-                    Screen('Flip', p.ptb.w);
-                    [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-                    key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
-
-                    % show image with example of samples from both distributions
-                    text = 'Dois conjuntos geradores de pontos.';
-                    DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
-                    text = 'Carregue numa tecla para avançar.';
-                    DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
-                    % Here we load in an image from file.
-                    theImageLocation = [pwd, '\generative_processes_difficult_3.jpg'];
-                    theImage_example = imread(theImageLocation);
-                    % Make the image into a texture
-                    imageTexture_example = Screen('MakeTexture', p.ptb.w, theImage_example);
-                    Screen('DrawTexture', p.ptb.w, imageTexture_example);
-                    Screen('Flip', p.ptb.w);
-                    [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-                    key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
-                end  
-
-                text = ['Nos momentos assinalados pelo círculo amarelo terá de indicar que conjunto \n', ... 
-                'estava ativo imediatamente antes usando o teclado.\n\n'...
-                'Responda com a mão direita usando as setas cima e baixo,\n'... 
-                'para indicar que conjunto estava ativo.\n\n'...
-                'Mantenha o olhar fixo na imagem central e observe os pontos com a visão periferica. \n\n', ...
-                'Carregue numa tecla para avançar.'];
-                 DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-                 
-%                 % draw 2 arrows indicating which key to press
-%                 % create a triangle - p.ptb.CrossPosition_y-400 - [p.ptb.width, p.ptb.height]
-%                 head   = [ p.ptb.CrossPosition_x-(p.ptb.width/3), p.ptb.CrossPosition_y]; % coordinates of head
-%                 width  = 75;           % width of arrow head
-%                 points = [ head-[width/2, 0];        %left corner
-%                            head-[0, width];         % top corner
-%                            head+[width/2,0] ];      %right corner
-% 
-%                 Screen('FillPoly', p.ptb.w,[200,200,200], points); % arrow signaling which key to press
-% 
-%                 head   = [ p.ptb.CrossPosition_x+(p.ptb.width/3), p.ptb.CrossPosition_y]; % coordinates of head
-%         %         width  = 75;           % width of arrow head
-%                points = [ head+[-width/2, -width];        %left corner
-%                            head;         % top corner
-%                            head+[width/2,-width] ];      %right corner
-% 
-%                 Screen('FillPoly', p.ptb.w,[200,200,200], points); % arrow signaling which key to press
-                Screen('Flip', p.ptb.w);
-                [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-                key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end          
-
-                draw_fix(p);
-                correct = 0; trial_number = 0; coloured_task = 0;
-            %         [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
-            [seq,~] = make_glaze_block_training_sequences(400, sd(block), location_of_mean(block), 1, 0);
-            if block == 1
-                p.seq.phase4_easy{run} = seq;
-            else
-                p.seq.phase5_difficult{run} = seq;
-            end
-            ActSampleOnset = GetSecs;
-                 for trial  = 1:400
-
-                    %Get the variables that Trial function needs.
-                    stim_id       = seq.stim(trial);
-                    type          = seq.type(trial);
-                    location      = seq.sample(trial);
-                    gener_side    = seq.generating_side(trial);
-                    OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
-                    if type == 0 % Show a single sample
-                        arrow = 0;
-                        [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
-                    elseif type == 1 % Choice trial.
-                        trial_number = trial_number+1;
-                        [p, response] = visual_cue_trial(p);
-
-                        if gener_side>0 && response == 1
-                           correct = correct+1;
-                           text = ['Correto! \n', ...  
-                               'Era a distribuição de baixo que estava ativa.\n\n', ...
-                               'Carregue numa tecla para avançar.'];
-                        elseif gener_side<0 && response == 0
-                            correct = correct+1;
-                            text = ['Correto! \n', ... 
-                                'Era a distribuição de cima que estava ativa.\n\n', ...
-                               'Carregue numa tecla para avançar.'];
-                        elseif gener_side>0 && response == 0
-                           text = ['Errado! \n', ...  
-                               'Era a distribuição de baixo que estava ativa.\n\n', ...
-                               'Carregue numa tecla para avançar.'];
-                        elseif gener_side<0 && response == 1
-                           text = ['Errado! \n', ...  
-                               'Era a distribuição de cima que estava ativa.\n\n', ...
-                               'Carregue numa tecla para avançar.'];
-                        else
-                           text = ['Carregou na tecla errada.\n\n', ...
-                               'Carregue numa tecla para avançar.'];
-                        end
-                            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-                            Screen('Flip', p.ptb.w);
-                            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-                            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
-                            ActSampleOnset = GetSecs;
-                    end 
-                    p = dump_keys(p);
-
-    %                 p = dump_keys(p);    
-    %                 %stop the queue
-    %                 KbQueueStop(p.ptb.device);
-    %                 KbQueueRelease(p.ptb.device);
-
-                end
-
-                % feedback
-                Screen('Flip', p.ptb.w); % clear fixation cross
-               % record accuracy data
-                if block == 1 % easy version of taks
-                    p.accuracy.phase4_easy{run} = correct/trial_number;
-                else
-                    p.accuracy.phase5_difficult{run} = correct/trial_number;
-                end
-
-                text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
-                    'Se pretende repetir o bloco pressione a tecla I, para avançar pressione a tecla P.'];
                 DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
                 Screen('Flip', p.ptb.w);
-                % record responses
-                while 1
-                    [secs, keyStateVec] = KbWait((p.ptb.device), 2);
-                    keycodes=find(keyStateVec==1);
-                    keys_repeat_training = KbName(keycodes(1));
-                   if strcmp(keys_repeat_training , 'q') || strcmp(keys_repeat_training , 'p') || strcmp(keys_repeat_training, 'i')
-                       break
-                   end
-                end
-                p = dump_keys(p);
-            end 
-        end
+                [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+                key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
+            elseif block ==2 % two distribution closer together - more difficult version of task - PHASE 4
+                text = ['Agora vamos fazer a tarefa mais difícil.\n'...
+                'A partir de agora os conjuntos que geram os pontos\n'... 
+                'vão estar mais sobrepostos.\n\n', ...
+                'Carregue numa tecla para avançar.'];
+                DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+                Screen('Flip', p.ptb.w);
+                [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+                key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
 
+                % show image with example of samples from both distributions
+                text = 'Dois conjuntos geradores de pontos.';
+                DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
+                text = 'Carregue numa tecla para avançar.';
+                DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
+                % Here we load in an image from file.
+                theImageLocation = [pwd, '\generative_processes_difficult_3.jpg'];
+                theImage_example = imread(theImageLocation);
+                % Make the image into a texture
+                imageTexture_example = Screen('MakeTexture', p.ptb.w, theImage_example);
+                Screen('DrawTexture', p.ptb.w, imageTexture_example);
+                Screen('Flip', p.ptb.w);
+                [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+                key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
+            end  
 
-            %% Hierarchical decisions training 
-            % PHASE 6 and 7
-            % use lower SNR - distributions closer together
-            block = 2; arrow = 0; %count = 0; 
-            text = ['A partir daqui as respostas terão em conta não só qual o conjunto gerador ativo,\n'...
-                        'mas também qual a imagem que aparece a indicar que tem de tomar uma decisão.\n\n'...
-                        'Essa imagem pode ser uma cara ou uma casa.\n\n'...
-                        'Terá de responder de acordo com uma regra que será mostrada a seguir.\n\n'...
-                        'Use a tecla Z para resposta à esquerda com o indicar esquerdo.\n'...
-                        'Use a tecla M para resposta à direita com o indicador direito.\n\n'...
-                        'Carregue numa tecla para avançar.\n'];
+            text = ['Nos momentos assinalados pelo círculo amarelo terá de indicar que conjunto \n', ... 
+            'estava ativo imediatamente antes usando o teclado.\n\n'...
+            'Responda com a mão direita usando as setas esquerda e cima,\n'... 
+            'para indicar que conjunto estava ativo.\n\n'...
+            'Mantenha o olhar fixo na imagem central e observe os pontos com a visão periferica. \n\n', ...
+            'Carregue numa tecla para avançar.'];
             DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
             Screen('Flip', p.ptb.w);
             [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end     
+            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end          
 
-            rule_explained(p, rule_hierarchical_decision); KbStrokeWait(p.ptb.device);
+            draw_fix(p);
+            p = inference_task(p, coloured_task, block, number_of_trials); 
+        end 
+        %% hierarchical decisions training phase
+        block = 2; % use lower SNR - distributions closer together
+        number_of_trials = 100;
+        p = hierarchical_decisions_training_phase(p, block, number_of_trials);
+    
+    else
+        %% hierarchical decisions training phase
+        block = 2; % use lower SNR - distributions closer together
+        number_of_trials = 100;
+        p = hierarchical_decisions_training_phase(p, block, number_of_trials);
+    end
 
-    %      for rule_hierarchical_decision = [0, 1]
-            run_colour = 0; run_no_colour = 0;
-            for coloured_task = [1 0] % first run with colours then without colours
-
-                if coloured_task == 1 % PHASE 6
-                    text = ['Nesta primeira fase, poderá usar as cores para inferir qual o conjunto ativo.\n\n'...
-                        'Verde = conjunto superior. Azul = conjunto inferior.\n\n'...
-                        'Carregue numa tecla para avançar.\n'];
-                    DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-                    Screen('Flip', p.ptb.w);
-                    [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-                    key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end   
-                else % PHASE 7
-                    text = ['Agora terá de inferir qual o conjunto ativo sem a ajuda das cores.\n\n'...    
-                        'A representação visual da regra será mostrada a seguir.\n\n'...
-                        'Carregue numa tecla para observar a representação visual da regra.\n'];
-                    DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-                    Screen('Flip', p.ptb.w);
-                    [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-                    key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end   
-                    % show rule
-                    rule_explained(p, rule_hierarchical_decision); KbStrokeWait(p.ptb.device);
-                end 
- 
-                    keys_repeat_training = {'i'};
-                    while strcmp(keys_repeat_training, 'i') % for repeating run if necessary
-
-                        % [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
-                        [seq,~] = make_glaze_block_training_sequences(400, sd(block), location_of_mean(block), 1, 0);
-                        if coloured_task == 1
-                            run_colour = run_colour+1; 
-                            p.seq.phase5_color{run_colour} = seq;
-                        else
-                            run_no_colour = run_no_colour+1;
-                            p.seq.phase6_no_color{run_no_colour} = seq;
-                        end
-                        
-                        if (coloured_task == 1 && run_colour>1) ||  (coloured_task == 0 && run_no_colour>1)
-                            % show rule to remind participant on second try
-                            rule_explained(p, rule_hierarchical_decision); KbStrokeWait(p.ptb.device);
-                        end
-                        
-                        
-                        %% image files to load
-                        % dir with face or house images files
-                        face_dir = [p.images_dir, '\selected_faces_adults_similar_lum'];
-                        house_dir = [p.images_dir, '\selected_houses_similar_lum'];
-                        % check how many choice stimulus of each type for this run
-                        number_face_stim = length(find(seq.stim == 0));
-                        number_house_stim = length(find(seq.stim == 1));
-                        Files = dir(fullfile(face_dir,'*.jpg'));
-                        file_order_faces = randperm(size(Files, 1)); 
-                        p.choice_trials.file_order_faces = file_order_faces(1:number_face_stim);
-                        for numb_files=1:number_face_stim
-                            p.choice_trials.file_names_faces{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_faces(numb_files)).name);
-                        end
-                        Files = dir(fullfile(house_dir,'*.jpg'));
-                        file_order_houses = randperm(size(Files, 1));
-                        p.choice_trials.file_order_houses = file_order_houses(1:number_house_stim);
-                        for numb_files=1:number_house_stim
-                            p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_houses(numb_files)).folder, Files(file_order_houses(numb_files)).name);
-                        end
-
-                        draw_fix(p);
-                        correct = 0; trial_number = 0;
-                        count_faces = 0; count_houses = 0; % to determine which image to show
-                        ActSampleOnset = GetSecs;
-                        for trial  = 1:400%size(p.sequence.stim, 2)
-                            %Get the variables that Trial function needs.
-                            stim_id       = seq.stim(trial);
-                            type          = seq.type(trial);
-                            location      = seq.sample(trial);
-                            gener_side    = seq.generating_side(trial);
-                            OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
-
-                            if type == 0
-                                % Show a single sample
-                                [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
-                            elseif type == 1 % Choice trial.
-                                trial_number = trial_number+1;
-                                if stim_id == 0
-                                    count_faces = count_faces+1;
-                                    theImageLocation = p.choice_trials.file_names_faces{count_faces};
-                                elseif stim_id == 1
-                                    count_houses = count_houses+1;
-                                    theImageLocation = p.choice_trials.file_names_houses{count_houses};
-                                end
-                                fprintf('\nCHOICE TRIAL; stim_id:%i, gener_side:%02.2f ', stim_id, gener_side>0);
-                                [p, ~, keycodes, ~, abort] = choice_trial(p, OnsetTime, theImageLocation);
-                                % analysis accuracy of responses
-                                [correct_trial, text] = hierarchical_decision_accuracy(keycodes, p, gener_side, stim_id, rule_hierarchical_decision);
-                                correct = correct + correct_trial;
-                                DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-                                Screen('Flip', p.ptb.w);
-                                [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-                                key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end     
-                                ActSampleOnset = GetSecs;
-                                p = dump_keys(p);
-                            end
-                        end
-                        Screen('Flip', p.ptb.w); % clear fixation cross
-                        % record accuracy
-                        if coloured_task == 1
-                            p.accuracy.phase5_color{run_colour} = correct/trial_number;
-                        else
-                            p.accuracy.phase6_no_color{run_no_colour} = correct/trial_number;
-                        end
-                        % feedback
-                        text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
-                            'Se pretende repetir o bloco pressione a tecla I, para avançar pressione a tecla P.'];
-                        DrawFormattedText(p.ptb.w, text, 'center', round(p.ptb.rect(4)*0.5), p.stim.white,[],[],[],2,[]);
-                        Screen('Flip', p.ptb.w);
-                        while 1
-                            % record responses
-                            [secs, keyStateVec] = KbWait((p.ptb.device), 2);
-                            keycodes=find(keyStateVec==1);
-                            keys_repeat_training = KbName(keycodes(1));
-                           if strcmp(keys_repeat_training , 'q') || strcmp(keys_repeat_training , 'p')
-                               break
-                           end
-                        end
-                    end  
-            end
-break
+    break
 end
         end_time = GetSecs; p.training_time=(end_time-start_time)/60;
         fprintf('Esta sessao demorou %d minutes.\n',(end_time-start_time)/60);
         % save data
+        mkdir([pwd, '/training_data']);
         save([pwd, '/training_data/', subject, '_training.mat'], 'p');
         %stop the queue and close screen etc
         cleanup;
@@ -959,16 +560,16 @@ end
         RestrictKeysForKbCheck(p.ptb.keysOfInterest);
         KbQueueCreate(p.ptb.device);%, p.ptb.keysOfInterest);%default device.
 
-        fix  = [p.ptb.CrossPosition_x p.ptb.CrossPosition_y];
-
-        d = (p.ptb.fc_size(1)^2/2)^.5;
-        p.square = [fix(1)-d, fix(2)-d, fix(1)+d, fix(2)+d];
-        p.FixCross     = [fix(1)-1,fix(2)-p.ptb.fc_size,fix(1)+1,fix(2)+p.ptb.fc_size;fix(1)-p.ptb.fc_size,fix(2)-1,fix(1)+p.ptb.fc_size,fix(2)+1];
-        p.FixCross_s   = [fix(1)-1,fix(2)-p.ptb.fc_size/2,fix(1)+1,fix(2)+p.ptb.fc_size/2;fix(1)-p.ptb.fc_size/2,fix(2)-1,fix(1)+p.ptb.fc_size/2,fix(2)+1];
-%         p = make_dist_textures(p);
-        l = p.ptb.rect(1); t = p.ptb.rect(2); r = p.ptb.rect(3); b = p.ptb.rect(4);
-        p.stim.left_rect = [l, (b-t)/2-5-20, r, (b-t)/2+5-20];
-        p.stim.right_rect = [l, 20+(b-t)/2-5, r, 20+(b-t)/2+5];
+%         fix  = [p.ptb.CrossPosition_x p.ptb.CrossPosition_y];
+% 
+%         d = (p.ptb.fc_size(1)^2/2)^.5;
+%         p.square = [fix(1)-d, fix(2)-d, fix(1)+d, fix(2)+d];
+%         p.FixCross     = [fix(1)-1,fix(2)-p.ptb.fc_size,fix(1)+1,fix(2)+p.ptb.fc_size;fix(1)-p.ptb.fc_size,fix(2)-1,fix(1)+p.ptb.fc_size,fix(2)+1];
+%         p.FixCross_s   = [fix(1)-1,fix(2)-p.ptb.fc_size/2,fix(1)+1,fix(2)+p.ptb.fc_size/2;fix(1)-p.ptb.fc_size/2,fix(2)-1,fix(1)+p.ptb.fc_size/2,fix(2)+1];
+% %         p = make_dist_textures(p);
+%         l = p.ptb.rect(1); t = p.ptb.rect(2); r = p.ptb.rect(3); b = p.ptb.rect(4);
+%         p.stim.left_rect = [l, (b-t)/2-5-20, r, (b-t)/2+5-20];
+%         p.stim.right_rect = [l, 20+(b-t)/2-5, r, 20+(b-t)/2+5];
              
         
                 %% Make a gaussian aperture with the "alpha" channel
@@ -1138,6 +739,8 @@ end
         draw_fix(p);
         text = 'Carregue numa tecla para avançar.';
         DrawFormattedText(p.ptb.w, text, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        text = 'Carregue numa tecla para avançar.';
+        DrawFormattedText(p.ptb.w, text, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
         text = 'Preste atenção e memorize esta regra.';
         DrawFormattedText(p.ptb.w, text, 'center', 9*p.ptb.height/1, p.stim.white,[],[],[],2,[]);
         %% Flip to the screen
@@ -1252,4 +855,310 @@ end
                            'Carregue numa tecla para avançar.'];
                 end
     end
+
+    function show_probability_distributions(p)
+    % show image with example of samples from both distributions
+    text = 'Dois conjuntos geradores de pontos.';
+    DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
+    text = 'Carregue numa tecla para avançar.';
+    DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
+    % Here we load in an image from file.
+    theImageLocation = [pwd, '\generative_processes_easy_3.jpg'];
+    theImage_example = imread(theImageLocation);
+    % Make the image into a texture
+    imageTexture_example = Screen('MakeTexture', p.ptb.w, theImage_example);
+    Screen('DrawTexture', p.ptb.w, imageTexture_example);
+    Screen('Flip', p.ptb.w);
+    [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+    key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
+    % Screen('Flip', p.ptb.w);
+    block = 1;% easy version
+            % PHASE 1 - example of bottom distribution
+            text = ['Sequência de pontos com origem no conjunto inferior. \n\n'...
+                    'Carregue numa tecla para avançar.'];
+            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+            Screen('Flip', p.ptb.w);
+            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
+            draw_fix(p); coloured_task = 1;
+    %         [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
+            [seq,~] = make_glaze_block_training_sequences(25, p.sd(block), p.location_of_mean(block), 0, 1);
+            ActSampleOnset = GetSecs; p.seq.phase1 = seq;
+             for trial  = 1:25
+                %Get the variables that Trial function needs.
+                stim_id       = seq.stim(trial);
+                type          = seq.type(trial);
+                location      = seq.sample(trial);
+                gener_side    = seq.generating_side(trial);
+                OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
+                % Show a single sample
+                arrow = 0;
+                [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+             end
+
+             WaitSecs(1);
+             Screen('Flip', p.ptb.w);
+            % notice that and second phase - example of top distribution
+            text = ['Note que na sequência anterior apesar da maioria dos pontos se encontrarem \n'...
+                'a baixo da cruz de fixação, alguns apareceram acima da cruz de fixação.\n\n', ...
+                'Carregue numa tecla para avançar.'];
+            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+            Screen('Flip', p.ptb.w);
+            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
+            % PHASE 2
+            text = ['A seguir vamos apresentar uma sequência de pontos com origem no conjunto superior.\n\n', ...
+                'Carregue numa tecla para avançar.'];
+            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+            Screen('Flip', p.ptb.w);
+            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+            key_pressed = KbName(keyCode);
+            draw_fix(p); coloured_task = 1;
+    %       [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
+            [seq,~] = make_glaze_block_training_sequences(25, p.sd(block), p.location_of_mean(block), 0, -1);
+            ActSampleOnset = GetSecs; p.seq.phase2 = seq;
+             for trial  = 1:25
+                %Get the variables that Trial function needs.
+                stim_id       = seq.stim(trial);
+                type          = seq.type(trial);
+                location      = seq.sample(trial);
+                gener_side    = seq.generating_side(trial);
+                OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
+                % Show a single sample
+                [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+             end
+    end
+
+    function p = inference_task(p, coloured_task, block, number_of_trials)              
+            correct = 0; trial_number = 0;
+            keys_repeat_training = {'i'}; run = 0;
+         while strcmp(keys_repeat_training, 'i')
+                run = run+1;
+            %         [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
+            [seq,~] = make_glaze_block_training_sequences(number_of_trials, p.sd(block), p.location_of_mean(block), 1, 0);
+            ActSampleOnset = GetSecs; 
+            % save sequences used
+            if coloured_task == 1, p.seq.phase3{run} = seq; elseif coloured_task == 0 && block == 1, p.seq.phase4{run} = seq;
+            elseif coloured_task == 0 && block == 2, p.seq.phase5{run} = seq; end
+            
+             for trial  = 1:number_of_trials
+                %Get the variables that Trial function needs.
+                stim_id       = seq.stim(trial);
+                type          = seq.type(trial);
+                location      = seq.sample(trial);
+                gener_side    = seq.generating_side(trial);
+                OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
+
+                if type == 0 % Show a single sample
+                    arrow = 0;
+                    [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+                elseif type == 1 % Choice trial.
+                    trial_number = trial_number+1;
+                    [p, response] = visual_cue_trial(p);
+
+                    if gener_side>0 && response == 1
+                       correct = correct+1;
+                       text = ['Correto! \n', ...  
+                           'Era a distribuição de baixo que estava ativa.\n\n', ...
+                           'Carregue numa tecla para avançar.'];
+                    elseif gener_side<0 && response == 0
+                        correct = correct+1;
+                        text = ['Correto! \n', ... 
+                            'Era a distribuição de cima que estava ativa.\n\n', ...
+                           'Carregue numa tecla para avançar.'];
+                    elseif gener_side>0 && response == 0
+                       text = ['Errado! \n', ...  
+                           'Era a distribuição de baixo que estava ativa.\n\n', ...
+                           'Carregue numa tecla para avançar.'];
+                    elseif gener_side<0 && response == 1
+                       text = ['Errado! \n', ...  
+                           'Era a distribuição de cima que estava ativa.\n\n', ...
+                           'Carregue numa tecla para avançar.'];
+                    else
+                       text = ['Carregou na tecla errada.\n\n', ...
+                           'Carregue numa tecla para avançar.'];
+                    end
+                    DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+                    Screen('Flip', p.ptb.w);
+                    [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+                    key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
+                    ActSampleOnset = GetSecs;
+                end
+                p = dump_keys(p);
+
+                if abort
+                    break
+                end
+
+             end
+
+            % feedback
+            Screen('Flip', p.ptb.w); % clear fixation cross
+            % save accuracy on p variable
+            if coloured_task == 1, p.accuracy.phase3_easy_coloured{run} = correct/trial_number; elseif coloured_task == 0 && block == 1, p.accuracy.phase4_easy{run} = correct/trial_number;
+            elseif coloured_task == 0 && block == 2, p.accuracy.phase5_difficult{run} = correct/trial_number; end
+            
+            text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
+                'Se pretende repetir o bloco pressione a tecla I, para avançar pressione a tecla P.'];
+            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+            Screen('Flip', p.ptb.w);
+
+            % record responses
+            while 1
+                [~, keyStateVec] = KbWait((p.ptb.device), 2);
+                keycodes=find(keyStateVec==1);
+                keys_repeat_training = KbName(keycodes(1));
+                if strcmp(keys_repeat_training, 'q') || strcmp(keys_repeat_training, 'p') || strcmp(keys_repeat_training, 'i')
+                    break
+                end
+            end
+         end
+         p = dump_keys(p);
+    end
+
+
+    %% Hierarchical decisions training phase
+    % PHASE 5 and 6
+    function p = hierarchical_decisions_training_phase(p, block, number_of_trials)
+        arrow = 0;
+        text = ['A partir daqui as respostas terão em conta não só qual o conjunto gerador ativo,\n'...
+                    'mas também qual a imagem que aparece a indicar que tem de tomar uma decisão.\n\n'...
+                    'Essa imagem pode ser uma cara ou uma casa.\n\n'...
+                    'Terá de responder de acordo com uma regra que será mostrada a seguir.\n\n'...
+                    'Use a tecla Z para resposta à esquerda com o indicar esquerdo.\n'...
+                    'Use a tecla M para resposta à direita com o indicador direito.\n\n'...
+                    'Carregue numa tecla para avançar.\n'];
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip', p.ptb.w);
+        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+        key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end     
+
+        rule_explained(p, rule_hierarchical_decision); KbStrokeWait(p.ptb.device);
+
+        % for rule_hierarchical_decision = [0, 1]
+        run_colour = 0; run_no_colour = 0;
+        for coloured_task = [1 0] % first run with colours then without colours
+
+            if coloured_task == 1 % PHASE 5
+                text = ['Nesta primeira fase, poderá usar as cores para inferir qual o conjunto ativo.\n\n'...
+                    'Verde = conjunto superior. Azul = conjunto inferior.\n\n'...
+                    'Após o aparecimento da imagem, tem dois segundos para responder.\n\n'...
+                    'Carregue numa tecla para avançar.\n'];
+                DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+                Screen('Flip', p.ptb.w);
+                [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+                key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end   
+            else % PHASE 6
+                text = ['Agora terá de inferir qual o conjunto ativo sem a ajuda das cores.\n\n'...    
+                    'A representação visual da regra será mostrada a seguir.\n\n'...
+                    'Carregue numa tecla para avançar.\n'];
+                DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+                Screen('Flip', p.ptb.w);
+                [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+                key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end   
+                % show rule
+                rule_explained(p, rule_hierarchical_decision); KbStrokeWait(p.ptb.device);
+            end 
+
+            keys_repeat_training = {'i'};
+            while strcmp(keys_repeat_training, 'i') % for repeating run if necessary
+
+                % [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
+                [seq,~] = make_glaze_block_training_sequences(400, p.sd(block), p.location_of_mean(block), 1, 0);
+                if coloured_task == 1
+                    run_colour = run_colour+1; 
+                    p.seq.phase6_color{run_colour} = seq;
+                else
+                    run_no_colour = run_no_colour+1;
+                    p.seq.phase7_no_color{run_no_colour} = seq;
+                end
+
+                if (coloured_task == 1 && run_colour>1) ||  (coloured_task == 0 && run_no_colour>1)
+                    % show rule to remind participant on second try
+                    rule_explained(p, rule_hierarchical_decision); KbStrokeWait(p.ptb.device);
+                end
+
+
+                %% image files to load
+                % dir with face or house images files
+                face_dir = [p.images_dir, '\selected_faces_adults_similar_lum'];
+                house_dir = [p.images_dir, '\selected_houses_similar_lum'];
+                % check how many choice stimulus of each type for this run
+                number_face_stim = length(find(seq.stim == 0));
+                number_house_stim = length(find(seq.stim == 1));
+                Files = dir(fullfile(face_dir,'*.jpg'));
+                file_order_faces = randperm(size(Files, 1)); 
+                p.choice_trials.file_order_faces = file_order_faces(1:number_face_stim);
+                for numb_files=1:number_face_stim
+                    p.choice_trials.file_names_faces{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_faces(numb_files)).name);
+                end
+                Files = dir(fullfile(house_dir,'*.jpg'));
+                file_order_houses = randperm(size(Files, 1));
+                p.choice_trials.file_order_houses = file_order_houses(1:number_house_stim);
+                for numb_files=1:number_house_stim
+                    p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_houses(numb_files)).folder, Files(file_order_houses(numb_files)).name);
+                end
+
+                draw_fix(p);
+                correct = 0; trial_number = 0;
+                count_faces = 0; count_houses = 0; % to determine which image to show
+                ActSampleOnset = GetSecs;
+                for trial  = 1:number_of_trials%size(p.sequence.stim, 2)
+                    %Get the variables that Trial function needs.
+                    stim_id       = seq.stim(trial);
+                    type          = seq.type(trial);
+                    location      = seq.sample(trial);
+                    gener_side    = seq.generating_side(trial);
+                    OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
+
+                    if type == 0
+                        % Show a single sample
+                        [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+                    elseif type == 1 % Choice trial.
+                        trial_number = trial_number+1;
+                        if stim_id == 0
+                            count_faces = count_faces+1;
+                            theImageLocation = p.choice_trials.file_names_faces{count_faces};
+                        elseif stim_id == 1
+                            count_houses = count_houses+1;
+                            theImageLocation = p.choice_trials.file_names_houses{count_houses};
+                        end
+%                             fprintf('\nCHOICE TRIAL; stim_id:%i, gener_side:%02.2f ', stim_id, gener_side>0);
+                        [p, ~, keycodes, ~, abort] = choice_trial(p, OnsetTime, theImageLocation);
+                        % analysis accuracy of responses
+                        [correct_trial, text] = hierarchical_decision_accuracy(keycodes, p, gener_side, stim_id, rule_hierarchical_decision);
+                        correct = correct + correct_trial;
+                        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+                        Screen('Flip', p.ptb.w);
+                        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+                        key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end     
+                        ActSampleOnset = GetSecs;
+                        p = dump_keys(p);
+                    end
+                end
+                Screen('Flip', p.ptb.w); % clear fixation cross
+                % record accuracy
+                if coloured_task == 1
+                    p.accuracy.phase6_color{run_colour} = correct/trial_number;
+                else
+                    p.accuracy.phase7_no_color{run_no_colour} = correct/trial_number;
+                end
+                % feedback
+                text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
+                    'Se pretende repetir o bloco pressione a tecla I, para avançar pressione a tecla P.'];
+                DrawFormattedText(p.ptb.w, text, 'center', round(p.ptb.rect(4)*0.5), p.stim.white,[],[],[],2,[]);
+                Screen('Flip', p.ptb.w);
+                while 1
+                    % record responses
+                    [~, keyStateVec] = KbWait((p.ptb.device), 2);
+                    keycodes=find(keyStateVec==1);
+                    keys_repeat_training = KbName(keycodes(1));
+                   if strcmp(keys_repeat_training , 'q') || strcmp(keys_repeat_training , 'p') || strcmp(keys_repeat_training , 'i')
+                       break
+                   end
+                end
+            end  
+        end
+    end
+
 end
