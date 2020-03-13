@@ -55,55 +55,119 @@ p.subject = subject;
 
 %% >>>>>>> Experiment starts.
 %try
+
     for block = run
         fprintf(['Running SUB=' subject, ' Run=' num2str(block) '\n']);
         p.block = block;
         p.sequence = sequence;
-        KbQueueStop(p.ptb.device);
-        KbQueueRelease(p.ptb.device);
+        if fmri == 0
+            KbQueueStop(p.ptb.device);
+            KbQueueRelease(p.ptb.device);
+        else
+            IOPort('Flush',p.LuminaHandle); 
+        end
 
         text = ['Durante a tarefa, mantenha o olhar fixo na figura central,\n'...
                 'mantenha a cabeça fixa no apoio e não fale.\n\n'...
                 'Carregue numa tecla para avançar.\n'];
         DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
         Screen('Flip', p.ptb.w);
-        KbStrokeWait(p.ptb.device);
-
+        if fmri == 0
+            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
+        else
+            IOPort('Read',p.LuminaHandle, 1, 1); %IOPort(‘Read’, handle [, blocking=0] [, amount]);
+            pr = 1;
+            while pr
+                key = IOPort('Read',response_box_handle);
+                if ~isempty(key) %&& (length(key) == 1)
+                    pr = 0;
+                end
+                IOPort('Flush',response_box_handle);
+            end
+        end
+                        
         p = InitEyeLink(p);
         CalibrateEL;
-
+        
         rule_explained(p, rule_hierarchical_decision) % show image with rule
-        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-        key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
+        if fmri == 0
+            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
+        else
+            pr = 1;
+            while pr
+                key = IOPort('Read',response_box_handle);
+                if ~isempty(key) %&& (length(key) == 1)
+                    pr = 0;
+                end
+                IOPort('Flush',response_box_handle);
+            end
+        end
+        
+         if p.syncboxEnabled %Catarina defined waiting MRI 
+            Screen('FillRect', p.ptb.w, p.stim.bg );
+            DrawFormattedText(p.ptb.w, 'Waiting MRI to start...', 'center', 'center', p.stim.white,[],[],[],2,[]);
+            Screen('Flip',p.ptb.w);
 
-        [p] = GlazeBlock(p,coloured_task);
+            SynchBox = IOPort('OpenSerialPort', 'COM2', 'BaudRate=57600 DataBits=8 Parity=None StopBits=1 FlowControl=None');
+            IOPort('Flush',SynchBox);
+            [TriggerReceived, StartTime]=waitForTrigger(SynchBox,1,1000); %
+
+            if ~ TriggerReceived
+                disp('Did not receive trigger - aborting stim');
+                sca; return
+            end
+         end
+        
+        draw_fix(p); %Screen('Flip',p.ptb.w);  
+        %WaitSecs(12); % baseline?
+        [p, outcomes] = GlazeBlock(p,coloured_task);
         
     end
-%end
-p = save_data(p);
-%stop the queue
-KbQueueStop(p.ptb.device);
-KbQueueRelease(p.ptb.device);
+    p = dump_keys(p);
+    WaitSecs(10);
+    fprintf('\n This block of trials lasted %3.2fs\n', GetSecs()-p.start_trials);
 
-cleanup(p);
-% lasterr
+    % Need to show feedback here!
+    p.sum_outcomes = sum(outcomes);
+    p.accuracy_rate = p.sum_outcomes/length(outcomes);
+    text = sprintf('No último bloco acertou %2.0f%% das respostas.\n', 100*p.accuracy_rate);
+    Screen('FillRect', p.ptb.w, p.stim.bg);
+    DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+    Screen('Flip',p.ptb.w);
+    KbWait(p.ptb.device, 2, GetSecs()+15);
+    p = save_data(p);
+    %stop the queue
+    if fmri == 0
+        KbQueueStop(p.ptb.device);
+        KbQueueRelease(p.ptb.device);
+    end
+
+    cleanup(p);
+    % lasterr
 
     %% -----------------------------------
     %  Experiment blocks
     %  -----------------------------------
 
-    function [p] = GlazeBlock(p, coloured_task)
+    function [p, outcomes] = GlazeBlock(p, coloured_task)
         % 4.8 Check data save
         abort=false;
         p.start_time = datestr(now, 'dd-mmm-yyTHHMM'); %p.start_time = datestr(now, 'dd-mmm-yy-HH:MM:SS');
 
         Screen('FillRect',p.ptb.w,p.stim.bg);
         Screen('Flip',p.ptb.w);
-        KbQueueStop(p.ptb.device);
-        KbQueueRelease(p.ptb.device);
-        KbQueueCreate(p.ptb.device);
-        KbQueueStart(p.ptb.device);
-        KbQueueFlush(p.ptb.device);
+        
+        if fmri == 0
+            KbQueueStop(p.ptb.device);
+            KbQueueRelease(p.ptb.device);
+            KbQueueCreate(p.ptb.device);
+            KbQueueStart(p.ptb.device);
+            KbQueueFlush(p.ptb.device);
+        else
+            IOPort('Flush',p.LuminaHandle);
+        end
         
         Screen('Flip', p.ptb.w);
         Eyelink('StartRecording');
@@ -111,13 +175,16 @@ cleanup(p);
         Eyelink('Message', ['SUBJECT ', p.subject]);
         p = Log(p, GetSecs, 'START_GLAZE', nan);
         p = Log(p, GetSecs, 'SUBJECT', p.subject);
-
-        WaitSecs(1);
+        
+        
         draw_fix(p);
+        WaitSecs(1);
+
 %         StartGlazeEyelinkRecording(p.block, p.phase_variable);
         outcomes = []; % response accuracy
-        start_trials = GetSecs();
-        start = start_trials+0.4;
+        p.start_trials = GetSecs();
+%         start = start_trials+0.4;
+        ActSampleOnset = GetSecs;
         count_faces = 0; count_houses = 0; % to determine which image to show
         for trial  = 1:size(p.sequence.stim, 2)
             %Get the variables that Trial function needs.
@@ -125,7 +192,8 @@ cleanup(p);
             type          = p.sequence.type(trial);
             location      = p.sequence.sample(trial);
             gener_side    = p.sequence.generating_side(trial);
-            OnsetTime     = start+p.sequence.stimulus_onset(trial);
+%             OnsetTime     = start+p.sequence.stimulus_onset(trial);
+            OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
 %             if location < 0
 %                 fprintf('-');
 %             else
@@ -143,15 +211,15 @@ cleanup(p);
                 Eyelink('Message', 'gener_side %i', round(100*gener_side)); 
             end
             if ~isnan(location)
-                Eyelink('Message', 'location %d', round(1000*location)); % Maria all Eyelink commented!
+                Eyelink('Message', 'location %d', round(1000*location)); 
                 p = Log(p, GetSecs, 'GL_TRIAL_LOCATION', location);
             end
             p = Log(p, GetSecs, 'GL_TRIAL_TYPE', type);
-            Eyelink('Message', 'type %i', type); % Maria all Eyelink commented!
+            Eyelink('Message', 'type %i', type);
 
             if type == 0
                 % Show a single sample
-                [~, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task);
+                [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task);
             elseif type == 1
                 % Choice trial.
                 if stim_id == 0
@@ -212,22 +280,10 @@ cleanup(p);
                     outcomes = [outcomes 0]; %#ok<AGROW>
                     fprintf('NO REWARD!\n')
                 end
+                ActSampleOnset = GetSecs-0.4; % so that next sample starts on time!
             end
 
         end
-        p = dump_keys(p);
-        WaitSecs(10);
-        fprintf('\n This block of trials lasted %3.2fs\n', GetSecs()-start_trials);
-        
-        % Need to show feedback here!
-        p.sum_outcomes = sum(outcomes);
-        p.accuracy_rate = p.sum_outcomes/length(outcomes);
-        text = sprintf('No último bloco acertou %2.0f%% das respostas.\n', 100*p.accuracy_rate);
-        Screen('FillRect', p.ptb.w, p.stim.bg);
-        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-        Screen('Flip',p.ptb.w);
-        KbWait(p.ptb.device, 2, GetSecs()+15);
-
     end
 
 
@@ -257,32 +313,59 @@ cleanup(p);
         Screen('DrawTexture', p.ptb.w, imageTexture, [], NewImageRect_centered, 0);
         Screen('DrawTexture', p.ptb.w, p.gaussian_aperture.fullWindowMask);
 
+        % Flush key events
+        if fmri == 0
+            p = dump_keys(p);
+            KbQueueFlush(p.ptb.device);        
+        elseif fmri == 1   
+            IOPort('Flush',p.LuminaHandle); %cat% 
+        end
+        
         % Flip to the screen
         % STIMULUS ONSET
         TimeStimOnset  = Screen('Flip', p.ptb.w, ChoiceStimOnset, 0);    
         start_rt_counter  = TimeStimOnset;
         p = Log(p,TimeStimOnset, 'CHOICE_TRIAL_ONSET', stim_id);
-        Eyelink('Message', sprintf('CHOICE_TRIAL_ONSET %i', stim_id)); % Maria all Eyelink commented!
+        Eyelink('Message', sprintf('CHOICE_TRIAL_ONSET %i', stim_id));
+        draw_fix(p);
+        if fmri == 1
+            while GetSecs<TimeStimOnset+ 0.2-p.ptb.slack
+                % listen to button presses      
+                [key,timestamp,~] = IOPort('Read',p.LuminaHandle);
+                if ~isempty(key)
+                    IOPort('Flush',p.LuminaHandle);
+                    % Save responses 
+                    keys_pressed = [keys_pressed; key];
+                    times_pressed = [times_pressed; timestamp];
+                end
+            end
+        end
         
-        % Check for key events
-        p = dump_keys(p);
-        KbQueueFlush(p.ptb.device);
-        % Now wait for response!
-        response = nan;
-        RT = nan;
-        draw_fix(p)  
         TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+ 0.2 -p.ptb.slack, 0);  %<----- FLIP                    
         p = Log(p,TimeStimOffset, 'CHOICE_TRIAL_STIMOFF', nan);
-        WaitSecs(1.8);
-        Eyelink('Message', 'CHOICE_TRIAL_STIMOFF'); % Maria all Eyelink commented!
-        response = nan;
-        keycodes = nan; response_times = nan;
-        [keycodes, response_times] = KbQueueDump(p);
-        key_pressed = KbName(keycodes); if strcmp(key_pressed, 'q'), abort = 1; end
+        Eyelink('Message', 'CHOICE_TRIAL_STIMOFF');
+        if fmri == 1
+            while GetSecs<TimeStimOffset+1.8
+                % listen to button presses      
+                [key,timestamp,~] = IOPort('Read',p.LuminaHandle);
+                if ~isempty(key)
+                    IOPort('Flush',p.LuminaHandle);
+                    % record responses 
+                    keys_pressed = [keys_pressed; key];
+                    times_pressed = [times_pressed; timestamp];
+                end
+            end 
+        else
+            WaitSecs(1.8);
+            % Now record response
+            keycodes = nan; response_times = nan;
+            [keycodes, response_times] = KbQueueDump(p);
+            key_pressed = KbName(keycodes); if strcmp(key_pressed, 'q'), abort = 1; end
+        end
     end
 
 
-    function [TimeSampleOffset, p] = show_one_sample(p, SampleOnset, location, gener_side, coloured_task)
+    function [ActSampleOnset, p] = show_one_sample(p, SampleOnset, location, gener_side, coloured_task)
         % Show one sample, such that black and white parts cancel.
         r_inner = p.stim.r_inner;
         o = p.stim.lumdiff;
@@ -295,9 +378,6 @@ cleanup(p);
 
         % left, top, right, bottom
         location = location*p.display.ppd; % location negative = up; location positive = down
-        % rin = [location-r_inner+cx, cy-r_inner, location+r_inner+cx, r_inner+cy];
-        % rout = [location-r_outer+cx, cy-r_outer, location+r_outer+cx, r_outer+cy];
-        % vertical positioning of dots % left, top, right, bottom
         rin = [cx-r_inner, location-r_inner+cy, cx+r_inner, location+r_inner+cy];
         rout = [cx-r_outer, location-r_outer+cy, cx+r_outer, location+r_outer+cy];
         draw_fix(p);            
@@ -315,8 +395,6 @@ cleanup(p);
         end
         Screen('FillOval', p.ptb.w, colour-o, rout);
         Screen('FillOval', p.ptb.w, colour+o, rin);
-%         Screen('FillOval', p.ptb.w, [128-o, 128-o, 128-o], rout);
-%         Screen('FillOval', p.ptb.w, [128+o, 128+o, 128+o], rin);
 
         ActSampleOnset  = Screen('Flip',p.ptb.w, SampleOnset, 0);      %<----- FLIP
         if gener_side<0 % Maria to make analyses easier
@@ -418,6 +496,7 @@ cleanup(p);
             p.path.baselocation  = [pwd '\exp_data'];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
+            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
         elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF')        % Coimbra lab 94  = ['DESKTOP-MKKOQUF']
 %             p.display.resolution = [1600 900]; %[1440 1080]; %[1920 1080]; Maria set to laptop 14Sep2019
             p.display.dimension = [34.5 19.5]; %[52, 39.5]; %[52, 29.5]; Maria set to laptop 14Sep2019
@@ -439,8 +518,7 @@ cleanup(p);
             % dir with face or house images files
 %             face_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_faces_adults_similar_lum'];
 %             house_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum'];
-            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
-        
+            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];        
         end
 
         p.stim.r_inner = .1;
@@ -458,8 +536,26 @@ cleanup(p);
         p.text.fontname                = 'Courier';
         p.text.fontsize                = 20;
         p.text.fixsize                 = 60;
-
-
+        
+        % Set response device: 
+        %if outside scanner = keyboard; 
+        % inside scanner = lumina
+        switch fmri
+            case 0
+                p.responseDevice = 'keyboard';
+                p.syncboxEnabled = 0;
+                KbName('UnifyKeyNames');
+%                 Screen('FillRect', p.ptb.w, p.stim.bg);
+%                 DrawFormattedText(p.ptb.w, 'Ready...', 'center', 'center', p.stim.white,[],[],[],2,[]);
+%                 Screen('Flip',p.ptb.w);
+%                 KbWait
+            case 1
+                p.responseDevice = 'lumina';
+                p.syncboxEnabled=1;
+                p.LuminaHandle = IOPort('OpenSerialPort','COM3', 'ReadTimeout', 30);
+                IOPort('Flush',p.LuminaHandle);     
+        end
+        
         %% keys to be used during the experiment:
         %This part is highly specific for your system and recording setup,
         %please enter the correct key identifiers. You can get this information calling the
@@ -470,7 +566,7 @@ cleanup(p);
         %4, 9 ==> Up (confirm)
         %5    ==> Pulse from the scanner
 
-        KbName('UnifyKeyNames');
+%         KbName('UnifyKeyNames');
         p.keys.confirm                 = '4$';%
 %         p.keys.answer_a                = {'1!', '2@', '3#', '4$'};
 %         p.keys.answer_a_train          = 'z';
@@ -618,42 +714,7 @@ cleanup(p);
         end
         RestrictKeysForKbCheck(p.ptb.keysOfInterest);
         KbQueueCreate(p.ptb.device);%, p.ptb.keysOfInterest);%default device.
-
-        %% %%%%%%%%%%%%%%%%%%%%%%%%%
-        %Make final reminders to the experimenter to avoid false starts,
-        %which are annoying. Here I specifically send test pulses to the
-        %physio computer and check if everything OK.
-        % k = 0;
-        %         while ~(k == p.keys.el_calib);%press V to continue
-        %             pause(0.1);
-        %             outp(p.com.lpt.address,244);%244 means all but the UCS channel (so that we dont shock the subject during initialization).
-        %             fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n');
-        %             fprintf('1/ Red cable has to be connected to the Cogent BOX\n');
-        %             fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n');
-        %             fprintf('2/ D2 Connection not to forget on the LPT panel\n');
-        %             fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n');
-        %             fprintf('3/ Switch the SCR cable\n');
-        %             fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n');
-        %             fprintf('4/ Button box has to be on\n');
-        %             fprintf('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n');
-        %             fprintf('5/ Did the trigger test work?\n!!!!!!You MUST observe 5 pulses on the PHYSIOCOMPUTER!!!!!\n\n\nPress V(alidate) to continue experiment or C to continue sending test pulses...\n')
-        %             [~, k] = KbStrokeWait(p.ptb.device);
-        %             k = find(k);
-        %         end
-
-
-%         fix          = [p.ptb.CrossPosition_x p.ptb.CrossPosition_y];
-
-%         d = (p.ptb.fc_size(1)^2/2)^.5;
-%         p.square = [fix(1)-d, fix(2)-d, fix(1)+d, fix(2)+d];
-%         p.FixCross     = [fix(1)-1,fix(2)-p.ptb.fc_size,fix(1)+1,fix(2)+p.ptb.fc_size;fix(1)-p.ptb.fc_size,fix(2)-1,fix(1)+p.ptb.fc_size,fix(2)+1];
-%         p.FixCross_s   = [fix(1)-1,fix(2)-p.ptb.fc_size/2,fix(1)+1,fix(2)+p.ptb.fc_size/2;fix(1)-p.ptb.fc_size/2,fix(2)-1,fix(1)+p.ptb.fc_size/2,fix(2)+1];
-% %         p = make_dist_textures(p);
-%         l = p.ptb.rect(1); t = p.ptb.rect(2); r = p.ptb.rect(3); b = p.ptb.rect(4);
-%         p.stim.left_rect = [l, (b-t)/2-5-20, r, (b-t)/2+5-20];
-%         p.stim.right_rect = [l, 20+(b-t)/2-5, r, 20+(b-t)/2+5];
-        
-       
+     
         Screen('TextSize', p.ptb.w,  20);
         Screen('TextFont', p.ptb.w, 'Courier');
         Screen('TextStyle', p.ptb.w, 1);
