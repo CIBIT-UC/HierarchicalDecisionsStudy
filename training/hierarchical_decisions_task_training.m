@@ -1,18 +1,24 @@
 function [p]=hierarchical_decisions_task_training(subject, rule_hierarchical_decision, start_phase)
+% subject = string with subject ID
+% rule_hierarchical_decision = 0 or 1 - rule counterbalanced across
+% participants
+% start_phase = 1 - to run the whole training schedule
+% start_phase = 2 - to run only the second part with hierarchical decisions
+% press 'q' at time of response to quit
 rng('shuffle'); % to be really random!
 % NoEyelink = 1; %is Eyelink wanted?
-debug   = 0; %debug mode => 1: transparent window enabling viewing the background.
+debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
 small_window = 0; % Open a small window only
 
 %% >>>>> Set up a lot of stuff
 abort = false; % 
 start_time = GetSecs;
-commandwindow; %focus on the command window, so that output is not written on the editor
+commandwindow; % focus on the command window, so that output is not written on the editor
 
-p         = [];%parameter structure that contains all info about the experiment.
+p         = [];% parameter structure that contains all info about the experiment.
 p.subject = subject; p.rule_hierarchical_decision = rule_hierarchical_decision;
-SetParams;%set parameters of the experiment
-SetPTB;%set visualization parameters.
+SetParams;% set parameters of the experiment
+SetPTB;% set visualization parameters.
 
 % % text properties
 Screen('TextSize', p.ptb.w,  20);
@@ -858,7 +864,7 @@ end
 
     function show_probability_distributions(p)
     % show image with example of samples from both distributions
-    text = 'Dois conjuntos geradores de pontos.';
+    text = 'Duas fontes geradoras de pontos.';
     DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
     text = 'Carregue numa tecla para avançar.';
     DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
@@ -874,7 +880,7 @@ end
     % Screen('Flip', p.ptb.w);
     block = 1;% easy version
             % PHASE 1 - example of bottom distribution
-            text = ['Sequência de pontos com origem no conjunto inferior. \n\n'...
+            text = ['Sequência de pontos com origem na fonte inferior. \n\n'...
                     'Carregue numa tecla para avançar.'];
             DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
             Screen('Flip', p.ptb.w);
@@ -907,7 +913,7 @@ end
             [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
             key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
             % PHASE 2
-            text = ['A seguir vamos apresentar uma sequência de pontos com origem no conjunto superior.\n\n', ...
+            text = ['A seguir vamos apresentar uma sequência de pontos com origem na fonte superior.\n\n', ...
                 'Carregue numa tecla para avançar.'];
             DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
             Screen('Flip', p.ptb.w);
@@ -959,20 +965,20 @@ end
                     if gener_side>0 && response == 1
                        correct = correct+1;
                        text = ['Correto! \n', ...  
-                           'Era a distribuição de baixo que estava ativa.\n\n', ...
+                           'Era a fonte de baixo que estava ativa.\n\n', ...
                            'Carregue numa tecla para avançar.'];
                     elseif gener_side<0 && response == 0
                         correct = correct+1;
                         text = ['Correto! \n', ... 
-                            'Era a distribuição de cima que estava ativa.\n\n', ...
+                            'Era a fonte de cima que estava ativa.\n\n', ...
                            'Carregue numa tecla para avançar.'];
                     elseif gener_side>0 && response == 0
                        text = ['Errado! \n', ...  
-                           'Era a distribuição de baixo que estava ativa.\n\n', ...
+                           'Era a fonte de baixo que estava ativa.\n\n', ...
                            'Carregue numa tecla para avançar.'];
                     elseif gener_side<0 && response == 1
                        text = ['Errado! \n', ...  
-                           'Era a distribuição de cima que estava ativa.\n\n', ...
+                           'Era a fonte de cima que estava ativa.\n\n', ...
                            'Carregue numa tecla para avançar.'];
                     else
                        text = ['Carregou na tecla errada.\n\n', ...
@@ -1021,7 +1027,7 @@ end
     % PHASE 5 and 6
     function p = hierarchical_decisions_training_phase(p, block, number_of_trials)
         arrow = 0;
-        text = ['A partir daqui as respostas terão em conta não só qual o conjunto gerador ativo,\n'...
+        text = ['Nesta parte do treino, as respostas terão em conta não só qual a fonte ativa,\n'...
                     'mas também qual a imagem que aparece a indicar que tem de tomar uma decisão.\n\n'...
                     'Essa imagem pode ser uma cara ou uma casa.\n\n'...
                     'Terá de responder de acordo com uma regra que será mostrada a seguir.\n\n'...
@@ -1049,7 +1055,7 @@ end
                 [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
                 key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end   
             else % PHASE 6
-                text = ['Agora terá de inferir qual o conjunto ativo sem a ajuda das cores.\n\n'...    
+                text = ['Agora terá de inferir qual a fonte ativa sem a ajuda das cores.\n\n'...    
                     'A representação visual da regra será mostrada a seguir.\n\n'...
                     'Carregue numa tecla para avançar.\n'];
                 DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);

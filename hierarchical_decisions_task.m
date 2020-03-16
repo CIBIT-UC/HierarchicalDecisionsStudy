@@ -1,8 +1,10 @@
 function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchical_decision, coloured_task)
-% subject = subject code
+% subject = subject code (string)
 % session = session number: 1 and 2 outside scanner; 3 and 4 inside scanner
 % run = up to 5 runs per session - ~10min per run
-
+% rule_hierarchical_decision = 0 or 1
+% coloured_task = 0 (grey samples) or 1 (coloured samples according to source)
+% press 'q' on choice trials to quit
 NoEyelink = 1; %is Eyelink wanted?
 debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
 small_window = 0; % Open a small window only
@@ -153,7 +155,7 @@ p.subject = subject;
 
     function [p, outcomes] = GlazeBlock(p, coloured_task)
         % 4.8 Check data save
-        abort=false;
+%         abort=false;
         p.start_time = datestr(now, 'dd-mmm-yyTHHMM'); %p.start_time = datestr(now, 'dd-mmm-yy-HH:MM:SS');
 
         Screen('FillRect',p.ptb.w,p.stim.bg);
@@ -493,7 +495,7 @@ p.subject = subject;
 %             p.display.resolution = [1600 900];
             p.display.dimension = [34.5 19.5];
             p.display.distance = [52, 64]; 
-            p.path.baselocation  = [pwd '\exp_data'];
+            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
