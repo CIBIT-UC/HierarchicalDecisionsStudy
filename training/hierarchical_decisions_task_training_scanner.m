@@ -1,4 +1,4 @@
-function [p]=hierarchical_decisions_task_training_scanner(subject, rule_hierarchical_decision, fmri)
+function [p]=hierarchical_decisions_task_training_scanner(subject, rule_hierarchical_decision, fmri, feedback)
 % subject = string with subject ID
 % rule_hierarchical_decision = 0 or 1 - rule counterbalanced across
 % participants
@@ -35,6 +35,7 @@ end
 
 while 1
     p.location_of_mean = [0.5, 0.25]; p.sd = [0.4, 0.4]; block = 2;
+    coloured_task = 0;
 
     %% hierarchical decisions training phase
     block = 2;
@@ -315,6 +316,14 @@ end
             p.display.distance = [52, 50];
             p.stim.bg = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
+       elseif  strcmp(p.hostname, 'SCANNER')  % MRI SCANNER - CHECK CODE
+            p.display.dimension = [87.8 48.5];
+            p.display.distance = [175, 182.5];
+            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
+            p.stim.bg  = [92 92 92];
+            p.stim.fix_target = [104 104 104];
+            % dir with car and house image files
+            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab']; 
         else
             p.display.dimension = [34.5 19.5];
             p.display.distance = [52, 50];
@@ -338,6 +347,25 @@ end
         p.text.fontsize                = 20;
         p.text.fixsize                 = 60;
 
+        % Set response device: 
+        %if outside scanner = keyboard; 
+        % inside scanner = lumina
+        switch fmri
+            case 0
+                p.responseDevice = 'keyboard';
+                p.syncboxEnabled = 0;
+                KbName('UnifyKeyNames');
+%                 Screen('FillRect', p.ptb.w, p.stim.bg);
+%                 DrawFormattedText(p.ptb.w, 'Ready...', 'center', 'center', p.stim.white,[],[],[],2,[]);
+%                 Screen('Flip',p.ptb.w);
+%                 KbWait
+            case 1
+                p.responseDevice = 'lumina';
+                p.syncboxEnabled=1;
+                p.LuminaHandle = IOPort('OpenSerialPort','COM3', 'ReadTimeout', 30);
+                IOPort('Flush',p.LuminaHandle);     
+        end
+        
         %% keys to be used during the experiment:
         % This part is highly specific for your system and recording setup,
         % please enter the correct key identifiers. You can get this information calling the
@@ -372,7 +400,7 @@ end
         %% %%%%%%%%%%%%%%%%%%%%%%%%%
 
         %%
-        p.var.current_bg              = p.stim.bg;%current background to be used.
+%         p.var.current_bg              = p.stim.bg;%current background to be used.
     end
 
 
@@ -979,8 +1007,7 @@ end
     end
 
 
-    %% Hierarchical decisions training phase
-    % PHASE 5 and 6
+    %% Hierarchical decisions training
     function p = hierarchical_decisions_training_phase(p, block, number_of_trials)
         arrow = 0;
         text = ['Nesta sessão, as respostas terão em conta não só qual a nuvem ativa,\n'...
@@ -994,7 +1021,7 @@ end
         Screen('Flip', p.ptb.w);
         if fmri == 0
             [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
+            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
         else
             IOPort('Read',p.LuminaHandle, 1, 1); %IOPort(‘Read’, handle [, blocking=0] [, amount]);
             pr = 1;
@@ -1034,7 +1061,7 @@ end
         end
 
         % [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
-        [seq,~] = make_glaze_block_training_sequences(400, p.sd(block), p.location_of_mean(block), 1, 0);
+        [seq,~] = make_glaze_block_training_sequences(number_of_trials, p.sd(block), p.location_of_mean(block), 1, 0);
 
         %% image files to load
         % dir with car or house images files
@@ -1095,27 +1122,11 @@ end
         end
         Screen('Flip', p.ptb.w); % clear fixation cross
         % record accuracy
-        if coloured_task == 1
-            p.accuracy.phase6_color{run_colour} = correct/trial_number;
-        else
-            p.accuracy.phase7_no_color{run_no_colour} = correct/trial_number;
-        end
+        p.accuracy.training_scanner = correct/trial_number;
         % feedback
-        text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
-            'Se pretende repetir o bloco pressione a tecla I, para avançar pressione a tecla P.'];
+        text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number)];
         DrawFormattedText(p.ptb.w, text, 'center', round(p.ptb.rect(4)*0.5), p.stim.white,[],[],[],2,[]);
         Screen('Flip', p.ptb.w);
-        while 1
-            % record responses
-            [~, keyStateVec] = KbWait((p.ptb.device), 2);
-            keycodes=find(keyStateVec==1);
-            keys_repeat_training = KbName(keycodes(1));
-           if strcmp(keys_repeat_training , 'q') || strcmp(keys_repeat_training , 'p') || strcmp(keys_repeat_training , 'i')
-               break
-           end
-        end
-              
-        end
+        WaitSecs(10);
     end
-
 end

@@ -111,7 +111,7 @@ p.subject = subject;
         
          if p.syncboxEnabled %Catarina defined waiting MRI 
             Screen('FillRect', p.ptb.w, p.stim.bg );
-            DrawFormattedText(p.ptb.w, 'Waiting MRI to start...', 'center', 'center', p.stim.white,[],[],[],2,[]);
+            DrawFormattedText(p.ptb.w, 'Waiting for MRI to start...', 'center', 'center', p.stim.white,[],[],[],2,[]);
             Screen('Flip',p.ptb.w);
 
             SynchBox = IOPort('OpenSerialPort', 'COM2', 'BaudRate=57600 DataBits=8 Parity=None StopBits=1 FlowControl=None');
@@ -502,17 +502,25 @@ p.subject = subject;
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
-        elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF')        % Coimbra lab 94  = ['DESKTOP-MKKOQUF']
+        elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94  = ['DESKTOP-MKKOQUF']
 %             p.display.resolution = [1600 900]; %[1440 1080]; %[1920 1080]; Maria set to laptop 14Sep2019
             p.display.dimension = [34.5 19.5]; %[52, 39.5]; %[52, 29.5]; Maria set to laptop 14Sep2019
             p.display.distance = [52, 50]; %[62, 59]; % 
             p.path.baselocation           = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\faces_vs_houses_lab94\data';
             p.stim.bg = [48 48 48];%[128, 128, 128];
-            p.stim.fix_target = [64 64 64]; 
+            p.stim.fix_target = [64 64 64];
             % dir with face or house images files
 %             car_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum';
 %             house_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum';
             p.images_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab';
+        elseif  strcmp(p.hostname, 'SCANNER')  % MRI SCANNER - CHECK CODE
+            p.display.dimension = [87.8 48.5];
+            p.display.distance = [175, 182.5];
+            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
+            p.stim.bg  = [92 92 92];
+            p.stim.fix_target = [104 104 104]; 
+            % dir with car and house image files
+            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab']; 
         else % other displays
 %             p.display.resolution = [1600 900]; %[1440 1080]; %[1920 1080]; Maria set to laptop 14Sep2019
             p.display.dimension = [34.5 19.5];
@@ -561,7 +569,7 @@ p.subject = subject;
                 IOPort('Flush',p.LuminaHandle);     
         end
         
-        %% keys to be used during the experiment:
+        %% keys to be used during the experiment: - CHECK FOR MRI RESPONSE BOX - 
         %This part is highly specific for your system and recording setup,
         %please enter the correct key identifiers. You can get this information calling the
         %KbName function and replacing the code below for the key below.
