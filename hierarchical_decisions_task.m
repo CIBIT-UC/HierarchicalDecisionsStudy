@@ -237,6 +237,7 @@ p.subject = subject;
                 [p, ~, keycodes, response_times, abort] = choice_trial(p, OnsetTime, stim_id, theImageLocation);
                 if abort==1, return, end
                 % analysis accuracy of responses
+                % NEED TO INCLUDE RESPONSES IN SCANNER!!!!
                 correct = 0;
                 if ~isnan(keycodes)
                     for iii = 1:length(keycodes)
@@ -244,7 +245,7 @@ p.subject = subject;
                         keys = KbName(keycodes(iii));
                         p = Log(p, RT, 'BUTTON_PRESS', keys); % save info for all responses so we know if it was corrected
                         if iii == length(keycodes) % what counts for accuracy is last response
-                            if gener_side > 0 && stim_id == 0 % bottom and faces
+                            if gener_side > 0 && stim_id == 0 % bottom and cars
                                 if p.rule_hierarchical_decision == 0 && strcmp(keys, 'm')
                                     correct = correct+1;
                                 elseif p.rule_hierarchical_decision == 1 && strcmp(keys, 'z')
@@ -490,7 +491,7 @@ p.subject = subject;
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
             % dir with face or house images files
-%             face_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum'];
+%             car_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum'];
 %             house_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum'];
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
         elseif strcmp(p.hostname, 'cnd0151937') % laptop hp elitebook
@@ -509,7 +510,7 @@ p.subject = subject;
             p.stim.bg = [48 48 48];%[128, 128, 128];
             p.stim.fix_target = [64 64 64]; 
             % dir with face or house images files
-%             face_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum';
+%             car_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum';
 %             house_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum';
             p.images_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab';
         else % other displays
@@ -520,7 +521,7 @@ p.subject = subject;
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
             % dir with face or house images files
-%             face_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum'];
+%             car_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum'];
 %             house_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum'];
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];        
         end
