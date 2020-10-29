@@ -15,7 +15,7 @@ p         = [];%parameter structure that contains all info about the experiment.
 [p] = SetParams(p);%set parameters of the experiment
 [p] = SetPTB(p, debug, small_window);%set visualization parameters.
 
-location_of_mean = [0.5, 0.25]; sd = [0.5, 0.5];
+location_of_mean = [0.5, 0.25]; sd = [0.4, 0.4];
 for block = 1:2
     draw_fix(p); coloured_task = 1;
     %[seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
@@ -115,9 +115,9 @@ for block = 1:2
 
             imageArray=Screen('GetImage', p.ptb.w, [p.ptb.CrossPosition_x-300, p.ptb.CrossPosition_y-300,p.ptb.CrossPosition_x+300, p.ptb.CrossPosition_y+300] );
             if block == 1
-                imwrite(imageArray, 'generative_processes_easy_3.jpg');
+                imwrite(imageArray, 'generative_processes_easy_SNR_2_5.jpg');
             else
-                imwrite(imageArray, 'generative_processes_difficult_3.jpg');
+                imwrite(imageArray, 'generative_processes_difficult_SNR_1_25.jpg');
             end
             KbStrokeWait(p.ptb.device);
 end
@@ -210,6 +210,7 @@ end
             p.display.dimension = [34.5 19.5];
             p.display.distance = [52, 50];
             p.stim.bg = [128, 128, 128];
+            p.stim.fix_target = [144 144 144]; 
         end
         
         p.display.ppd = ppd(mean(p.display.distance), p.display.resolution(1),...

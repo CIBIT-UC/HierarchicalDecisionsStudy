@@ -34,19 +34,19 @@ SetPTB;%set visualization parameters.
 
 
 % check how many choice stimulus of each type for this run
-number_face_stim = length(find(sequence.stim == 0));
+number_car_stim = length(find(sequence.stim == 0));
 number_house_stim = length(find(sequence.stim == 1));
-Files = dir(fullfile([p.images_dir '\selected_faces_adults_similar_lum'],'*.jpg'));
-file_order_faces = randperm(size(Files, 1)); 
-p.choice_trials.file_order_faces = file_order_faces(1:number_face_stim);
-for numb_files=1:number_face_stim
-    p.choice_trials.file_names_faces{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_faces(numb_files)).name);
+Files = dir(fullfile([p.images_dir '\selected_cars_similar_lum'],'*.jpg'));
+file_order_cars = randperm(size(Files, 1)); 
+p.choice_trials.file_order_cars = file_order_cars(1:number_car_stim);
+for numb_files=1:number_car_stim
+    p.choice_trials.file_names_cars{numb_files, 1} = fullfile(Files(file_order_cars(numb_files)).folder, Files(file_order_cars(numb_files)).name);
 end
-Files = dir(fullfile([p.images_dir '\selected_houses_similar_lum'] ,'*.jpg'));
+Files = dir(fullfile([p.images_dir '\selected_houses_similar_lum2cars'] ,'*.jpg'));
 file_order_houses = randperm(size(Files, 1));
 p.choice_trials.file_order_houses = file_order_houses(1:number_house_stim);
 for numb_files=1:number_house_stim
-    p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_houses(numb_files)).name);
+    p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_cars(numb_files)).folder, Files(file_order_houses(numb_files)).name);
 end
 
 p.rule_hierarchical_decision = rule_hierarchical_decision; % to counterbalance across participants which rule in first run, can be 0 or 1
@@ -69,8 +69,10 @@ p.subject = subject;
             IOPort('Flush',p.LuminaHandle); 
         end
 
-        text = ['Durante a tarefa, mantenha o olhar fixo na figura central,\n'...
+        text = ['Durante a tarefa, mantenha o olhar fixo no alvo de fixação,\n'...
                 'mantenha a cabeça fixa no apoio e não fale.\n\n'...
+                'Use a tecla Z para resposta à esquerda com o indicador esquerdo.\n'...
+                'Use a tecla M para resposta à direita com o indicador direito.\n\n'...
                 'Carregue numa tecla para avançar.\n'];
         DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
         Screen('Flip', p.ptb.w);
@@ -187,8 +189,8 @@ p.subject = subject;
         p.start_trials = GetSecs();
 %         start = start_trials+0.4;
         ActSampleOnset = GetSecs;
-        count_faces = 0; count_houses = 0; % to determine which image to show
-        for trial  = 1:20%size(p.sequence.stim, 2)
+        count_cars = 0; count_houses = 0; % to determine which image to show
+        for trial  = 1:size(p.sequence.stim, 2)
             %Get the variables that Trial function needs.
             stim_id       = p.sequence.stim(trial);
             type          = p.sequence.type(trial);
@@ -225,8 +227,8 @@ p.subject = subject;
             elseif type == 1
                 % Choice trial.
                 if stim_id == 0
-                    count_faces = count_faces+1;
-                    theImageLocation = p.choice_trials.file_names_faces{count_faces};
+                    count_cars = count_cars+1;
+                    theImageLocation = p.choice_trials.file_names_cars{count_cars};
                 elseif stim_id == 1
                     count_houses = count_houses+1;
                     theImageLocation = p.choice_trials.file_names_houses{count_houses};
@@ -299,7 +301,7 @@ p.subject = subject;
         RT = nan; %#ok<NASGU>
         abort = 0;
         
-        % load image of face or house - face - stim_id = 0; house - stim_id = 1 
+        % load image of car or house - car - stim_id = 0; house - stim_id = 1 
         % Here we load in an image from file.
         theImage = imread(theImageLocation);
         %    Make the image into a texture
@@ -488,7 +490,7 @@ p.subject = subject;
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
             % dir with face or house images files
-%             face_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_faces_adults_similar_lum'];
+%             face_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum'];
 %             house_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum'];
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
         elseif strcmp(p.hostname, 'cnd0151937') % laptop hp elitebook
@@ -507,7 +509,7 @@ p.subject = subject;
             p.stim.bg = [48 48 48];%[128, 128, 128];
             p.stim.fix_target = [64 64 64]; 
             % dir with face or house images files
-%             face_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_faces_adults_similar_lum';
+%             face_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum';
 %             house_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum';
             p.images_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab';
         else % other displays
@@ -518,7 +520,7 @@ p.subject = subject;
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
             % dir with face or house images files
-%             face_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_faces_adults_similar_lum'];
+%             face_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum'];
 %             house_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum'];
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];        
         end
@@ -970,13 +972,13 @@ p.subject = subject;
         img_size = 300;
         % Here we load in an image from file.
         % face image
-        theImageLocation = [p.images_dir '\child-3.jpg'];
-        theImage_face = imread(theImageLocation);
+        theImageLocation = [p.images_dir '\car-27.jpg'];
+        theImage_car = imread(theImageLocation);
         % Make the image into a texture
-        imageTexture_face = Screen('MakeTexture', p.ptb.w, theImage_face);
+        imageTexture_car = Screen('MakeTexture', p.ptb.w, theImage_car);
 
         % House Image
-        theImageLocation = [p.images_dir '\house-3.jpg'];
+        theImageLocation = [p.images_dir '\house-38.jpg'];
         theImage = imread(theImageLocation);
         % Make the image into a texture
         imageTexture_house = Screen('MakeTexture', p.ptb.w, theImage);
@@ -1022,22 +1024,54 @@ p.subject = subject;
         NewImage_Right_Top = [p.ptb.width/2, p.ptb.height/2-img_size, p.ptb.width/2+img_size, p.ptb.height/2];
         NewImage_Left_Bottom = [p.ptb.width/2-img_size, p.ptb.height/2, p.ptb.width/2, p.ptb.height/2+img_size];
 
-        if rule == 0
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Left_Top, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Right_Bottom, 0);
+if rule == 0
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Top, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Bottom, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Right_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Bottom, 0);
+            text3 = ['Se for a nuvem de cima que está ativa.\n', ...
+            'na altura da resposta e aparecer.\n', ...
+            'uma casa, responda com a mão direita,\n', ...
+            'se aparecer\n', ... 
+            'um carro, responda com a mão esquerda.'];
+            text4 = ['Se for a nuvem de baixo que está ativa.\n', ...
+            'na altura da resposta e aparecer.\n', ...
+            'um carro, responda com a mão direita,\n', ...
+            'se aparecer\n', ... 
+            'uma casa, responda com a mão esquerda.'];
         else
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Right_Bottom, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Right_Top, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Left_Bottom, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Top, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Bottom, 0);
+            text3 = ['Se for a nuvem de cima que está ativa.\n', ...
+            'na altura da resposta e aparecer.\n', ...
+            'um carro, responda com a mão direita,\n', ...
+            'se aparecer\n', ... 
+            'uma casa, responda com a mão esquerda.'];
+            text4 = ['Se for a nuvem de baixo que está ativa.\n', ...
+            'na altura da resposta e aparecer.\n', ...
+            'uma casa, responda com a mão direita,\n', ...
+            'se aparecer\n', ... 
+            'um carro, responda com a mão esquerda.'];
+        
         end
        
         Screen('DrawTexture', p.ptb.w, fullWindowMask);
         draw_fix(p);
-        text = 'Carregue numa tecla para avançar.';
-        DrawFormattedText(p.ptb.w, text, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        %DrawFormattedText(win, tstring [, sx][, sy][, color][, wrapat][, flipHorizontal][, flipVertical][, vSpacing][, righttoleft][, winRect])
+
+        Screen('TextSize', p.ptb.w, 16);
+        DrawFormattedText(p.ptb.w, text3, .25*p.ptb.width/10, p.ptb.height/2-img_size*3/4, p.stim.white,[],[],[],2,[]);
+        DrawFormattedText(p.ptb.w, text4, 6.7*p.ptb.width/10, p.ptb.height/2+img_size/4, p.stim.white,[],[],[],2,[]);
+        
+        Screen('TextSize', p.ptb.w,  20);
+        text1 = 'Quando tiver a regra bem presente, carregue numa tecla para avançar.';
+        DrawFormattedText(p.ptb.w, text1, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        text2 = 'Preste atenção e memorize esta regra.';
+        DrawFormattedText(p.ptb.w, text2, 'center', 1*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+
+
         %% Flip to the screen
         Screen('Flip', p.ptb.w);
     end
