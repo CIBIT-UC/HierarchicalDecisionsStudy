@@ -490,6 +490,7 @@ p.subject = subject;
             p.path.baselocation = ['N:\ProjectBrainstemAgeing\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
+            p.stim.lumdiff = 12; % luminance difference within sample fill and outline
             % dir with face or house images files
 %             car_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum'];
 %             house_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum'];
@@ -501,6 +502,7 @@ p.subject = subject;
             p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
+            p.stim.lumdiff = 12; % luminance difference within sample fill and outline
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
         elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94  = ['DESKTOP-MKKOQUF']
 %             p.display.resolution = [1600 900]; %[1440 1080]; %[1920 1080]; Maria set to laptop 14Sep2019
@@ -509,6 +511,7 @@ p.subject = subject;
             p.path.baselocation           = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\faces_vs_houses_lab94\data';
             p.stim.bg = [48 48 48];%[128, 128, 128];
             p.stim.fix_target = [64 64 64];
+            p.stim.lumdiff = 12; % luminance difference within sample fill and outline
             % dir with face or house images files
 %             car_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum';
 %             house_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum';
@@ -518,7 +521,8 @@ p.subject = subject;
             p.display.distance = [175, 182.5];
             p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [92 92 92];
-            p.stim.fix_target = [104 104 104]; 
+            p.stim.fix_target = [105 105 105]; 
+            p.stim.lumdiff = 10; % luminance difference within sample fill and outline
             % dir with car and house image files
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab']; 
         else % other displays
@@ -528,6 +532,7 @@ p.subject = subject;
             p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
+            p.stim.lumdiff = 12; % luminance difference within sample fill and outline
             % dir with face or house images files
 %             car_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum'];
 %             house_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum'];
@@ -535,7 +540,6 @@ p.subject = subject;
         end
 
         p.stim.r_inner = .1;
-        p.stim.lumdiff = 12; % luminance difference within sample fill and outline
         p.stim.sample_duration = .1;
         %create the base folder if not yet there.
         if exist(p.path.baselocation) == 0 %#ok<EXIST>
