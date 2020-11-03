@@ -537,7 +537,7 @@ p.subject = subject;
             p.stim.lumdiff = 12; % luminance difference within sample fill and outline
             % dir with face or house images files
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab']; 
-        elseif  strcmp(p.hostname, 'SCANNER')  % MRI SCANNER - CHECK CODE
+        elseif  strcmp(p.hostname, 'DESKTOP-TKTCOK0') % MRI SCANNER - CHECK CODE
             p.display.dimension = [87.8 48.5];
             p.display.distance = [175, 182.5];
             p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
