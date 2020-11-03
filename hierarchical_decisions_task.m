@@ -1,9 +1,10 @@
-function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchical_decision, coloured_task)
+function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchical_decision, coloured_task, language)
 % subject = subject code (string)
 % session = session number: 1 and 2 outside scanner; 3 and 4 inside scanner
 % run = up to 5 runs per session - ~10min per run
 % rule_hierarchical_decision = 0 or 1
 % coloured_task = 0 (grey samples) or 1 (coloured samples according to source)
+% language = 'PT' or 'EN'
 % press 'q' on choice trials to quit
 NoEyelink = 1; %is Eyelink wanted?
 debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
@@ -24,7 +25,7 @@ commandwindow; %focus on the command window, so that output is not written on th
 % clear mex global functions;%clear all before we start.
 
 GetSecs;
-WaitSecs(0.001);
+WaitSecs(0.001); 
 
 el        = []; % eye-tracker variable
 p         = []; % parameter structure that contains all info about the experiment.
@@ -65,15 +66,37 @@ p.subject = subject;
         if fmri == 0
             KbQueueStop(p.ptb.device);
             KbQueueRelease(p.ptb.device);
+            KbQueueCreate(p.ptb.device);
+            if strcmp(language, 'PT')
+                text = ['Durante a tarefa, mantenha o olhar fixo no alvo de fixação,\n'...
+                    'mantenha a cabeça fixa no apoio e não fale.\n\n'...
+                    'Use a tecla Z para resposta à esquerda com o indicador esquerdo.\n'...
+                    'Use a tecla M para resposta à direita com o indicador direito.\n\n'...
+                    'Carregue numa tecla para avançar.\n'];
+            else
+                 text = ['During the task, keep your eyes fixed on the fixation target,\n' ...
+                    'keep your head fixed on the support and do not speak.\n\n' ...
+                    'Use the Z key to answer left with your left index finger.\n' ...
+                    'Use the M key to answer right with your right index finger.\n\n' ...
+                    'Press any key to continue.\n'];
+            end
         else
             IOPort('Flush',p.LuminaHandle); 
+            if strcmp(language, 'PT')
+                text = ['Durante a tarefa, mantenha o olhar fixo no alvo de fixação,\n'...
+                    'não mexa a cabeça e não fale.\n\n'...
+                    'Use o botão da esquerda para resposta à esquerda.\n'...
+                    'Use p botão da direita para resposta à direita.\n\n'...
+                    'Carregue num botão para avançar.\n'];
+            else
+                text = ['During the task, keep your eyes fixed on the fixation target, \ n' ...
+                    'do not move your head or speak.\n\n' ...
+                    'Use the left button for the left answer. \ N' ...
+                    'Use the right button for the right answer. \ N \ n' ...
+                    'Press any button to continue. \ N'];
+            end
         end
 
-        text = ['Durante a tarefa, mantenha o olhar fixo no alvo de fixação,\n'...
-                'mantenha a cabeça fixa no apoio e não fale.\n\n'...
-                'Use a tecla Z para resposta à esquerda com o indicador esquerdo.\n'...
-                'Use a tecla M para resposta à direita com o indicador direito.\n\n'...
-                'Carregue numa tecla para avançar.\n'];
         DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
         Screen('Flip', p.ptb.w);
         if fmri == 0
@@ -127,27 +150,29 @@ p.subject = subject;
         draw_fix(p); %Screen('Flip',p.ptb.w);  
         %WaitSecs(12); % baseline?
         [p, outcomes] = GlazeBlock(p,coloured_task);
+        WaitSecs(10);
+        fprintf('\n This block of trials lasted %3.2fs\n', GetSecs()-p.start_trials);
+        % Need to show feedback here!
+        p.sum_outcomes = sum(outcomes);
+        p.accuracy_rate = p.sum_outcomes/length(outcomes);
+        if strcmp(language, 'PT')
+            text = sprintf('Nesta sessão acertou %2.0f%% das respostas.\n', 100*p.accuracy_rate);
+        else
+            text = sprintf('In this session, your answers were %2.0f%% correct.\n', 100*p.accuracy_rate);
+        end
+        Screen('FillRect', p.ptb.w, p.stim.bg);
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip',p.ptb.w);
+        KbWait(p.ptb.device, 2, GetSecs()+15);
         
     end
     p = dump_keys(p);
-    WaitSecs(10);
-    fprintf('\n This block of trials lasted %3.2fs\n', GetSecs()-p.start_trials);
-
-    % Need to show feedback here!
-    p.sum_outcomes = sum(outcomes);
-    p.accuracy_rate = p.sum_outcomes/length(outcomes);
-    text = sprintf('No último bloco acertou %2.0f%% das respostas.\n', 100*p.accuracy_rate);
-    Screen('FillRect', p.ptb.w, p.stim.bg);
-    DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-    Screen('Flip',p.ptb.w);
-    KbWait(p.ptb.device, 2, GetSecs()+15);
     p = save_data(p);
     %stop the queue
     if fmri == 0
         KbQueueStop(p.ptb.device);
         KbQueueRelease(p.ptb.device);
     end
-
     cleanup(p);
     % lasterr
 
@@ -487,7 +512,7 @@ p.subject = subject;
 %             p.display.resolution = [1680 1050];
             p.display.dimension = [47 29.5];
             p.display.distance = [52, 64]; 
-            p.path.baselocation = ['N:\ProjectBrainstemAgeing\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
+            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
             p.stim.lumdiff = 12; % luminance difference within sample fill and outline
@@ -976,7 +1001,7 @@ p.subject = subject;
         ppd = 2 * o*x_px/width; %  number of points per degree
     end
 
-        function rule_explained(p, rule)
+    function rule_explained(p, rule)
 
         % 'center' = 0 - top: face-left, house-right; bottom house-left, face-right        
         % load image of face or house - face - stim_id = 0; house - stim_id = 1 
@@ -985,13 +1010,13 @@ p.subject = subject;
         img_size = 300;
         % Here we load in an image from file.
         % face image
-        theImageLocation = [p.images_dir '\car-27.jpg'];
+        theImageLocation = [p.images_dir, '\car-27.jpg'];
         theImage_car = imread(theImageLocation);
         % Make the image into a texture
         imageTexture_car = Screen('MakeTexture', p.ptb.w, theImage_car);
 
         % House Image
-        theImageLocation = [p.images_dir '\house-38.jpg'];
+        theImageLocation = [p.images_dir, '\house-38.jpg'];
         theImage = imread(theImageLocation);
         % Make the image into a texture
         imageTexture_house = Screen('MakeTexture', p.ptb.w, theImage);
@@ -1037,36 +1062,66 @@ p.subject = subject;
         NewImage_Right_Top = [p.ptb.width/2, p.ptb.height/2-img_size, p.ptb.width/2+img_size, p.ptb.height/2];
         NewImage_Left_Bottom = [p.ptb.width/2-img_size, p.ptb.height/2, p.ptb.width/2, p.ptb.height/2+img_size];
 
-if rule == 0
+        if rule == 0
             Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Bottom, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Right_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Bottom, 0);
-            text3 = ['Se for a nuvem de cima que está ativa.\n', ...
-            'na altura da resposta e aparecer.\n', ...
-            'uma casa, responda com a mão direita,\n', ...
-            'se aparecer\n', ... 
-            'um carro, responda com a mão esquerda.'];
-            text4 = ['Se for a nuvem de baixo que está ativa.\n', ...
-            'na altura da resposta e aparecer.\n', ...
-            'um carro, responda com a mão direita,\n', ...
-            'se aparecer\n', ... 
-            'uma casa, responda com a mão esquerda.'];
+            if strcmp(language, 'PT')
+                text3 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de cima estiver ativa e aparecer.\n', ...
+                'uma casa, responda à direita,\n', ...
+                'se aparecer\n', ... 
+                'um carro, responda à esquerda.'];
+                text4 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de baixo estiver ativa e aparecer.\n', ...
+                'um carro, responda à direita,\n', ...
+                'se aparecer\n', ... 
+                'uma casa, responda à esquerda.'];
+            else
+                text3 = ['If just before the decision cue,\n', ...
+                    'the top cloud is active\n', ...
+                    'and the decision cue is\n', ...
+                    'a house, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a car, press the left button.'];
+                text4 = ['If just before the decision cue,\n', ...
+                    'the bottom cloud is active\n', ...
+                    'and the decision cue is\n', ...
+                    'a car, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a house, press the left button.'];
+            end
         else
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Right_Bottom, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Bottom, 0);
-            text3 = ['Se for a nuvem de cima que está ativa.\n', ...
-            'na altura da resposta e aparecer.\n', ...
-            'um carro, responda com a mão direita,\n', ...
-            'se aparecer\n', ... 
-            'uma casa, responda com a mão esquerda.'];
-            text4 = ['Se for a nuvem de baixo que está ativa.\n', ...
-            'na altura da resposta e aparecer.\n', ...
-            'uma casa, responda com a mão direita,\n', ...
-            'se aparecer\n', ... 
-            'um carro, responda com a mão esquerda.'];
+            if strcmp(language, 'PT')
+                text3 = ['Se a nuvem de cima estiver ativa.\n', ...
+                    'na altura da resposta e aparecer.\n', ...
+                    'um carro, responda à direita,\n', ...
+                    'se aparecer\n', ... 
+                    'uma casa, responda à esquerda.'];
+                text4 = ['Se a nuvem de baixo estiver ativa.\n', ...
+                    'na altura da resposta e aparecer.\n', ...
+                    'uma casa, responda à direita,\n', ...
+                    'se aparecer\n', ... 
+                    'um carro, responda à esquerda.'];
+            else
+                text3 = ['If just before the decision cue,\n', ...
+                    'the top cloud is active\n', ...
+                    'and the decision cue is\n', .....
+                    'a car, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a house, press the left button.'];
+                text4 = ['If just before the decision cue,\n', ...
+                    'the bottom cloud is active\n', ...
+                    'and the decision cue is\n', ...
+                    'a house, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a car, press the left button.'];
+            end
         
         end
        
@@ -1076,16 +1131,25 @@ if rule == 0
 
         Screen('TextSize', p.ptb.w, 16);
         DrawFormattedText(p.ptb.w, text3, .25*p.ptb.width/10, p.ptb.height/2-img_size*3/4, p.stim.white,[],[],[],2,[]);
-        DrawFormattedText(p.ptb.w, text4, 6.7*p.ptb.width/10, p.ptb.height/2+img_size/4, p.stim.white,[],[],[],2,[]);
+        DrawFormattedText(p.ptb.w, text4, 7*p.ptb.width/10, p.ptb.height/2+img_size/4, p.stim.white,[],[],[],2,[]);
         
         Screen('TextSize', p.ptb.w,  20);
-        text1 = 'Quando tiver a regra bem presente, carregue numa tecla para avançar.';
-        DrawFormattedText(p.ptb.w, text1, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
-        text2 = 'Preste atenção e memorize esta regra.';
-        DrawFormattedText(p.ptb.w, text2, 'center', 1*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        if strcmp(language, 'PT')
+            text1 = 'Quando tiver a regra bem presente, carregue numa tecla para avançar.';
+            DrawFormattedText(p.ptb.w, text1, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+            text2 = 'Preste atenção e memorize esta regra.';
+            DrawFormattedText(p.ptb.w, text2, 'center', 1*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        else
+            text1 = 'Once you have learned the rule, press any key to continue.';
+            DrawFormattedText(p.ptb.w, text1, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+            text2 = 'Pay attention and memorize this rule.';
+            DrawFormattedText(p.ptb.w, text2, 'center', 1*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        end
 
 
         %% Flip to the screen
         Screen('Flip', p.ptb.w);
+
     end
+   
 end
