@@ -35,7 +35,7 @@ Screen('TextStyle', p.ptb.w, 1);
 while 1
     p.location_of_mean = [0.5, 0.25]; p.sd = [0.4, 0.4];
 
-    text = ['Por favor, desligue ou tire o som ao telemovel. \n'...
+    text = ['Por favor, desligue ou tire o som ao telemóvel. \n'...
         'Obrigada!\n\n', ...
         'Quando estiver pronto, carregue numa tecla para começar.'];
     DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
@@ -892,12 +892,24 @@ end
 
     function show_probability_distributions(p)
     % show image with example of samples from both distributions
-    text = 'Duas nuvens geradoras de pontos.';
-    DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
-    text = 'Carregue numa tecla para avançar.';
+    text = 'Aqui estão representadas a azul e a verde duas nuvens geradoras de pontos.';
+    DrawFormattedText(p.ptb.w, text, 'center',  p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
+    text = ['Neste teste, vários pontos serão apresentados\n'...
+        'sequencialmente, numa linha vertical.\n'...
+        'O objetivo é conseguir estimar qual das\n'... 
+        'nuvens gera os pontos apresentados.'];
+    Screen('TextSize', p.ptb.w, 18);
+    DrawFormattedText(p.ptb.w, text, .25*p.ptb.width/10, 'center', p.stim.white,[],[],[],2,[]);
+    text = 'Carregue numa tecla para avançar.'; Screen('TextSize', p.ptb.w, 20);
     DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
-    % Here we load in an image from file.
-    theImageLocation = [pwd, '\generative_processes_easy_SNR_2_5.jpg'];
+    % Here we load an image from file.
+    if strcmp(p.hostname, 'czc0211hsd') %gab92
+        theImageLocation = [pwd, '\generative_processes_easy_SNR_2_5_gab92.jpg'];
+    elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94 
+        theImageLocation = [pwd, '\generative_processes_easy_SNR_2_5_lab94.jpg'];
+    else
+        theImageLocation = [pwd, '\generative_processes_easy_SNR_2_5.jpg'];
+    end
     theImage_example = imread(theImageLocation);
     % Make the image into a texture
     imageTexture_example = Screen('MakeTexture', p.ptb.w, theImage_example);
@@ -907,60 +919,60 @@ end
     key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
     % Screen('Flip', p.ptb.w);
     block = 1;% easy version
-            % PHASE 1 - example of bottom distribution
-            text = ['Sequência de pontos com origem na nuvem inferior. \n\n'...
-                    'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
-            draw_fix(p); coloured_task = 1;
-    %         [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
-            [seq,~] = make_glaze_block_training_sequences(25, p.sd(block), p.location_of_mean(block), 0, 1);
-            ActSampleOnset = GetSecs; p.seq.phase1 = seq;
-             for trial  = 1:25
-                %Get the variables that Trial function needs.
-                stim_id       = seq.stim(trial);
-                type          = seq.type(trial);
-                location      = seq.sample(trial);
-                gener_side    = seq.generating_side(trial);
-                OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
-                % Show a single sample
-                arrow = 0;
-                [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
-             end
+        % PHASE 1 - example of bottom distribution
+        text = ['Agora vamos mostrar uma sequência de pontos com origem na nuvem inferior. \n\n'...
+                'Carregue numa tecla para avançar.'];
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip', p.ptb.w);
+        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+        key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
+        draw_fix(p); coloured_task = 1;
+%         [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
+        [seq,~] = make_glaze_block_training_sequences(25, p.sd(block), p.location_of_mean(block), 0, 1);
+        ActSampleOnset = GetSecs; p.seq.phase1 = seq;
+         for trial  = 1:25
+            %Get the variables that Trial function needs.
+            stim_id       = seq.stim(trial);
+            type          = seq.type(trial);
+            location      = seq.sample(trial);
+            gener_side    = seq.generating_side(trial);
+            OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
+            % Show a single sample
+            arrow = 0;
+            [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+         end
 
-             WaitSecs(1);
-             Screen('Flip', p.ptb.w);
-            % notice that and second phase - example of top distribution
-            text = ['Note que na sequência anterior apesar da maioria dos pontos se encontrarem \n'...
-                'a baixo do alvo de fixação, alguns apareceram acima do alvo de fixação.\n\n', ...
-                'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
-            % PHASE 2
-            text = ['A seguir vamos apresentar uma sequência de pontos com origem na nuvem superior.\n\n', ...
-                'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode);
-            draw_fix(p); coloured_task = 1;
-    %       [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
-            [seq,~] = make_glaze_block_training_sequences(25, p.sd(block), p.location_of_mean(block), 0, -1);
-            ActSampleOnset = GetSecs; p.seq.phase2 = seq;
-             for trial  = 1:25
-                %Get the variables that Trial function needs.
-                stim_id       = seq.stim(trial);
-                type          = seq.type(trial);
-                location      = seq.sample(trial);
-                gener_side    = seq.generating_side(trial);
-                OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
-                % Show a single sample
-                [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
-             end
+         WaitSecs(1);
+         Screen('Flip', p.ptb.w);
+        % notice that and second phase - example of top distribution
+        text = ['Note que na sequência anterior apesar da maioria dos pontos se encontrarem \n'...
+            'a baixo do alvo de fixação, alguns apareceram acima do alvo de fixação.\n\n', ...
+            'Carregue numa tecla para avançar.'];
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip', p.ptb.w);
+        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+        key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
+        % PHASE 2
+        text = ['A seguir vamos apresentar uma sequência de pontos com origem na nuvem superior.\n\n', ...
+            'Carregue numa tecla para avançar.'];
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip', p.ptb.w);
+        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+        key_pressed = KbName(keyCode);
+        draw_fix(p); coloured_task = 1;
+%       [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
+        [seq,~] = make_glaze_block_training_sequences(25, p.sd(block), p.location_of_mean(block), 0, -1);
+        ActSampleOnset = GetSecs; p.seq.phase2 = seq;
+         for trial  = 1:25
+            %Get the variables that Trial function needs.
+            stim_id       = seq.stim(trial);
+            type          = seq.type(trial);
+            location      = seq.sample(trial);
+            gener_side    = seq.generating_side(trial);
+            OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
+            % Show a single sample
+            [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+         end
     end
 
     function p = inference_task(p, coloured_task, block, number_of_trials)              

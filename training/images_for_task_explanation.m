@@ -115,9 +115,9 @@ for block = 1:2
 
             imageArray=Screen('GetImage', p.ptb.w, [p.ptb.CrossPosition_x-300, p.ptb.CrossPosition_y-300,p.ptb.CrossPosition_x+300, p.ptb.CrossPosition_y+300] );
             if block == 1
-                imwrite(imageArray, 'generative_processes_easy_SNR_2_5.jpg');
+                imwrite(imageArray, 'generative_processes_easy_SNR_2_5_gab92.jpg');
             else
-                imwrite(imageArray, 'generative_processes_difficult_SNR_1_25.jpg');
+                imwrite(imageArray, 'generative_processes_difficult_SNR_1_25_gab92.jpg');
             end
             KbStrokeWait(p.ptb.device);
 end

@@ -211,7 +211,6 @@ end
         draw_fix(p);
         TimeSampleOffset = Screen('Flip',p.ptb.w,ActSampleOnset+p.sample_duration, 0);     %<----- FLIP
         draw_fix(p); 
-        %TimeSampleOffset = Screen('Flip',p.ptb.w,TimeSampleOffset+(.25), 0);
     end
 
 
@@ -287,31 +286,36 @@ end
             p.display.distance = [62, 59];
             p.stim.bg = [128, 128, 128]; % screen darkers than in the lab - only for script writing and testing
             p.stim.fix_target = [144 144 144]; 
+            p.stim.lumdiff = 12;%50; % luminance difference within sample fill and outline
         elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94  = ['DESKTOP-MKKOQUF']
 %             p.display.resolution = [1600 900]; % CHECK
             p.display.dimension = [34.5 19.5]; % CHECK
             p.display.distance = [52, 50];% CHECK
             p.stim.bg = [48 48 48];%[128, 128, 128];
             p.stim.fix_target = [64 64 64]; 
+            p.stim.lumdiff = 12;%50; % luminance difference within sample fill and outline
         elseif strcmp(p.hostname, 'cnd0151937') % Coimbra laptop
 %             p.display.resolution = [1600 900]; 
             p.display.dimension = [34.5 19.5];
             p.display.distance = [52, 50];
             p.stim.bg = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
-       elseif  strcmp(p.hostname, 'SCANNER')  % MRI SCANNER - CHECK CODE
+            p.stim.lumdiff = 12;%50; % luminance difference within sample fill and outline
+       elseif  strcmp(p.hostname, 'DESKTOP-TKTCOK0') % MRI SCANNER - CHECK CODE
             p.display.dimension = [87.8 48.5];
             p.display.distance = [175, 182.5];
-            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
+%             p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [92 92 92];
-            p.stim.fix_target = [104 104 104];
+            p.stim.fix_target = [105 105 105];
+            p.stim.lumdiff = 10;%50; % luminance difference within sample fill and outline
             % dir with car and house image files
-            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab']; 
+%             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab']; 
         else
             p.display.dimension = [34.5 19.5];
             p.display.distance = [52, 50];
             p.stim.bg = [128, 128, 128];
-            p.stim.fix_target = [144 144 144]; 
+            p.stim.fix_target = [144 144 144];
+            p.stim.lumdiff = 12;%50; % luminance difference within sample fill and outline
         end
         % find folder with face/house images
         mydir  = pwd; idcs   = strfind(mydir,filesep); newdir = mydir(1:idcs(end)-1);
@@ -319,8 +323,7 @@ end
 %         p.stim.bar_width = 400;
 %         p.stim.bar_separation = 50; % check what is this!
         p.stim.r_inner = .1;
-        p.stim.lumdiff = 12;%50; % luminance difference within sample fill and outline
-        p.stim.sample_duration = .1; % NOT SURE THIS IS RIGHT!!!
+        p.stim.sample_duration = .1;
         p.subject                       = subject; %subject id
         p.timestamp                     = datestr(now, 30); %the time_stamp of the current experiment.
 
@@ -704,13 +707,13 @@ end
             Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Bottom, 0);
             if strcmp(language, 'PT')
-                text3 = ['Se a nuvem de cima estiver ativa.\n', ...
-                    'na altura da resposta e aparecer.\n', ...
+                text3 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de cima estiver ativa e aparecer.\n', ...
                     'um carro, responda à direita,\n', ...
                     'se aparecer\n', ... 
                     'uma casa, responda à esquerda.'];
-                text4 = ['Se a nuvem de baixo estiver ativa.\n', ...
-                    'na altura da resposta e aparecer.\n', ...
+                text4 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de baixo estiver ativa e aparecer.\n', ...
                     'uma casa, responda à direita,\n', ...
                     'se aparecer\n', ... 
                     'um carro, responda à esquerda.'];
@@ -728,7 +731,6 @@ end
                     'if the decision cue is\n', ...
                     'a car, press the left button.'];
             end
-        
         end
        
         Screen('DrawTexture', p.ptb.w, fullWindowMask);
@@ -737,11 +739,11 @@ end
 
         Screen('TextSize', p.ptb.w, 16);
         DrawFormattedText(p.ptb.w, text3, .25*p.ptb.width/10, p.ptb.height/2-img_size*3/4, p.stim.white,[],[],[],2,[]);
-        DrawFormattedText(p.ptb.w, text4, 7*p.ptb.width/10, p.ptb.height/2+img_size/4, p.stim.white,[],[],[],2,[]);
+        DrawFormattedText(p.ptb.w, text4, .25*p.ptb.width/10, p.ptb.height/2+img_size/4, p.stim.white,[],[],[],2,[]);
         
         Screen('TextSize', p.ptb.w,  20);
         if strcmp(language, 'PT')
-            text1 = 'Quando tiver a regra bem presente, carregue numa tecla para avançar.';
+            text1 = 'Quando tiver a regra bem memorizada, carregue numa tecla para avançar.';
             DrawFormattedText(p.ptb.w, text1, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
             text2 = 'Preste atenção e memorize esta regra.';
             DrawFormattedText(p.ptb.w, text2, 'center', 1*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
@@ -1080,7 +1082,7 @@ end
                         'Essa imagem pode ser um carro ou uma casa.\n\n'...
                         'Terá de responder de acordo com a regra que será mostrada a seguir.\n\n'...
                         'Use o botão da esquerda para resposta à esquerda com a mão esquerda.\n'...
-                        'Use o botão da direira para resposta à direita com a mão direita.\n\n'...
+                        'Use o botão da direita para resposta à direita com a mão direita.\n\n'...
                         'Carregue numa tecla para avançar.\n'];
         else     
             text = ['In this session, responses will take into account not only which cloud is active,\n '...
@@ -1184,6 +1186,7 @@ end
                 end
 %                             fprintf('\nCHOICE TRIAL; stim_id:%i, gener_side:%02.2f ', stim_id, gener_side>0);
                 [p, ~, keycodes, ~, abort] = choice_trial(p, OnsetTime, theImageLocation);
+                if abort ==1, return, end
                 % analysis accuracy of responses
                 [correct_trial, text] = hierarchical_decision_accuracy(keycodes, gener_side, stim_id, rule_hierarchical_decision);
                 correct = correct + correct_trial;
