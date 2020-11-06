@@ -1119,13 +1119,9 @@ end
             % save accuracy on p variable
             if coloured_task == 1, p.accuracy.phase3_easy_coloured{run} = correct/trial_number; elseif coloured_task == 0 && block == 1, p.accuracy.phase4_easy{run} = correct/trial_number;
             elseif coloured_task == 0 && block == 2, p.accuracy.phase5_difficult{run} = correct/trial_number; end
-            if strcmp(language, 'PT')
-                text = [sprintf('Nesta sessão acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
-                    'Para repetir a sessão pressione a tecla I. Para avançar pressione a tecla P.'];
-            else
-                 text = [sprintf('In this session, you got %2.0f%% correct answers.\n\n', 100*correct/trial_number),...
-                    'If you want to repeat the block, press the I key, otherwise press the P key to proceed.'];               
-            end
+            if strcmp(language
+            text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
+                'Se pretende repetir o bloco pressione a tecla I, para avançar pressione a tecla P.'];
             DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
             Screen('Flip', p.ptb.w);
 
