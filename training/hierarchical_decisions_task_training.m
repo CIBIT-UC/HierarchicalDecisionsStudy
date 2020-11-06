@@ -38,11 +38,11 @@ while 1
     if strcmp(language, 'PT')
         text = ['Por favor, desligue ou tire o som ao telemóvel. \n'...
             'Obrigada!\n\n', ...
-            'Quando estiver pronto, carregue numa tecla para começar.'];
+            'Carregue numa tecla para começar.'];
     else
         text = ['Please turn off or mute your phone.\n'...
             'Thank you!\n\n', ...
-            'When you are ready, press any key to start.'];
+            'Press any key to start.'];
     end
     DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
     Screen('Flip', p.ptb.w);
@@ -144,8 +144,15 @@ while 1
                 DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
                 text = 'Carregue numa tecla para avançar.';
                 DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
-                % Here we load in an image from file.
-                theImageLocation = [pwd, '\generative_processes_difficult_SNR_1_25.jpg'];
+                % Here we load an image from file.
+                if strcmp(p.hostname, 'czc0211hsd') %gab72
+                    theImageLocation = [pwd, '\generative_processes_easy_SNR_1_25_gab92.jpg'];
+                elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94 
+                    theImageLocation = [pwd, '\generative_processes_easy_SNR_1_25_lab94.jpg'];
+                else
+                    theImageLocation = [pwd, '\generative_processes_easy_SNR_1_25.jpg'];
+                end
+                
                 theImage_example = imread(theImageLocation);
                 % Make the image into a texture
                 imageTexture_example = Screen('MakeTexture', p.ptb.w, theImage_example);
@@ -939,21 +946,16 @@ end
             'nuvens gera os pontos apresentados.'];
         text3 = 'Carregue numa tecla para avançar.'; 
     else
-        text1 = 'Here, two point-generating clouds are represented in blue and green.';
-        text2 = ['In this test, several points will be presented \n' ...
-            'sequentially, in a vertical line. \n' ...
-            'The goal is to be able to estimate which \n' ...
-            'cloud is generating the points presented.'];
+        text1 = 'Below, two point-generating clouds are represented in blue and green.';
+        text2 = ['In this test, several dots will be presented\n' ...
+            'sequentially, in a vertical line.\n' ...
+            'The goal is to be able to estimate which\n' ...
+            'cloud is generating the dots presented.'];
         text3 = 'Press any key to continue.';        
     end
     
-    DrawFormattedText(p.ptb.w, text1, 'center',  p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
-    Screen('TextSize', p.ptb.w, 18);
-    DrawFormattedText(p.ptb.w, text2, .25*p.ptb.width/10, 'center', p.stim.white,[],[],[],2,[]);
-    Screen('TextSize', p.ptb.w, 20);
-    DrawFormattedText(p.ptb.w, text3, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
-    % Here we load an image from file.
-    if strcmp(p.hostname, 'czc0211hsd') %gab92
+     % Here we load an image from file.
+    if strcmp(p.hostname, 'czc0211hsd') %gab72
         theImageLocation = [pwd, '\generative_processes_easy_SNR_2_5_gab92.jpg'];
     elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94 
         theImageLocation = [pwd, '\generative_processes_easy_SNR_2_5_lab94.jpg'];
@@ -964,6 +966,13 @@ end
     % Make the image into a texture
     imageTexture_example = Screen('MakeTexture', p.ptb.w, theImage_example);
     Screen('DrawTexture', p.ptb.w, imageTexture_example);
+    %load text
+    DrawFormattedText(p.ptb.w, text1, 'center',  p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
+    Screen('TextSize', p.ptb.w, 18);
+    DrawFormattedText(p.ptb.w, text2, .25*p.ptb.width/10, 'center', p.stim.white,[],[],[],2,[]);
+    Screen('TextSize', p.ptb.w, 20);
+    DrawFormattedText(p.ptb.w, text3, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
+   
     Screen('Flip', p.ptb.w);
     [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
     key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
@@ -971,10 +980,10 @@ end
     block = 1;% easy version
         % PHASE 1 - example of bottom distribution
         if strcmp(language, 'PT')
-            text = ['Agora vamos mostrar uma sequência de pontos com origem na nuvem inferior. \n\n'...
+            text = ['Agora vamos mostrar uma sequência de pontos com origem na nuvem inferior.\n\n'...
                 'Carregue numa tecla para avançar.'];
         else
-            text = ['Now we are going to show a sequence of dot originating in the lower cloud. \ n \ n '...
+            text = ['Now we are going to show a sequence of dots drawn from the lower cloud.\n\n'...
                 'Press any key to advance.'];
         end
         DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
@@ -1005,8 +1014,8 @@ end
                 'a baixo do alvo de fixação, alguns apareceram acima do alvo de fixação.\n\n', ...
                 'Carregue numa tecla para avançar.'];
         else
-            text = ['Note that in the previous sequence despite the fact that most dots are \ n' ...
-                'below the fixation target, some appeared above the fixation target. \ n \ n', ...
+            text = ['Note that in the previous sequence despite the fact that most dots are\n' ...
+                'below the fixation target, some appeared above the fixation target.\n\n', ...
                 'Press any key to continue.'];            
         end
         DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
@@ -1018,7 +1027,7 @@ end
             text = ['A seguir vamos apresentar uma sequência de pontos com origem na nuvem superior.\n\n', ...
                 'Carregue numa tecla para avançar.'];
         else
-            text = ['Next we will present a sequence of dots originating from the upper cloud. \ N \ n', ...
+            text = ['Next we will present a sequence of dots originating from the upper cloud.\n\n', ...
                 'Press any key to continue.'];          
         end
         DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
