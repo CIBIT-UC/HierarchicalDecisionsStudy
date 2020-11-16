@@ -9,14 +9,16 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
 NoEyelink = 1; %is Eyelink wanted?
 debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
 small_window = 0; % Open a small window only
+% close ports - scanner
+IOPort('CloseAll');
 
 %% >>>>> Set up a lot of stuff
 % Load stimulus sequence
 load_dir = [pwd '\exp_data' filesep subject];
-load([load_dir filesep 'task_sequences']);
+task_sequences=load([load_dir filesep 'task_sequences']);
 
 if subject > 0
-    sequence = task_sequences{session}{run};
+    sequence = task_sequences.task_sequences{session}{run};
     fmri = sequence.fmri; % if false skip waiting for pulses.
 end
 
@@ -81,7 +83,9 @@ p.subject = subject;
                     'Press any key to continue.\n'];
             end
         else
+            p.LuminaHandle = IOPort('OpenSerialPort','COM4'); 
             IOPort('Flush',p.LuminaHandle); 
+            KbName('UnifyKeyNames')
             if strcmp(language, 'PT')
                 text = ['Durante a tarefa, mantenha o olhar fixo no alvo de fixação,\n'...
                     'não mexa a cabeça e não fale.\n\n'...
@@ -112,7 +116,7 @@ p.subject = subject;
                 end
                 IOPort('Flush',response_box_handle);
             end
-        end              
+        end
         
         rule_explained(p, rule_hierarchical_decision) % show image with rule
         if fmri == 0
@@ -137,7 +141,7 @@ p.subject = subject;
             DrawFormattedText(p.ptb.w, 'Waiting for MRI to start...', 'center', 'center', p.stim.white,[],[],[],2,[]);
             Screen('Flip',p.ptb.w);
 
-            SynchBox = IOPort('OpenSerialPort', 'COM2', 'BaudRate=57600 DataBits=8 Parity=None StopBits=1 FlowControl=None');
+            SynchBox = IOPort('OpenSerialPort', 'COM5', 'BaudRate=57600 DataBits=8 Parity=None StopBits=1 FlowControl=None');
             IOPort('Flush',SynchBox);
             [TriggerReceived, StartTime]=waitForTrigger(SynchBox,1,1000); %
 
@@ -267,31 +271,35 @@ p.subject = subject;
                 if ~isnan(keycodes)
                     for iii = 1:length(keycodes)
                         RT = response_times(iii);
-                        keys = KbName(keycodes(iii));
+                        if fmri == 0
+                           keys = KbName(keycodes(iii));
+                        else
+                           keys =  num2str(keycodes(iii));
+                        end
                         p = Log(p, RT, 'BUTTON_PRESS', keys); % save info for all responses so we know if it was corrected
                         if iii == length(keycodes) % what counts for accuracy is last response
                             if gener_side > 0 && stim_id == 0 % bottom and cars
-                                if p.rule_hierarchical_decision == 0 && strcmp(keys, 'm')
+                                if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
                                     correct = correct+1;
-                                elseif p.rule_hierarchical_decision == 1 && strcmp(keys, 'z')
+                                elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
                                     correct = correct+1;
                                 end
                             elseif gener_side >0 && stim_id ==1 % bottom and houses 
-                                if p.rule_hierarchical_decision == 0 && strcmp(keys, 'z')
+                                if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
                                     correct = correct+1;
-                                elseif p.rule_hierarchical_decision == 1 && strcmp(keys, 'm')
+                                elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
                                     correct = correct+1;
                                 end
                             elseif gener_side <0 && stim_id ==0 % top and faces
-                                if p.rule_hierarchical_decision == 0 && strcmp(keys, 'z')
+                                if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
                                     correct = correct+1;
-                                elseif p.rule_hierarchical_decision == 1 && strcmp(keys, 'm')
+                                elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
                                     correct = correct+1;
                                 end
                             elseif gener_side < 0 && stim_id == 1 % top and houses
-                                if p.rule_hierarchical_decision == 0 && strcmp(keys, 'm')
+                                if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
                                     correct = correct+1;
-                                elseif p.rule_hierarchical_decision == 1 && strcmp(keys, 'z')
+                                elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
                                     correct = correct+1;
                                 end
                             end
@@ -324,7 +332,7 @@ p.subject = subject;
     function [p, RT, keycodes, response_times, abort] = choice_trial(p, ChoiceStimOnset, stim_id, theImageLocation)
 %         rule = nan;
         response = nan; %#ok<NASGU>
-        RT = nan; %#ok<NASGU>
+        RT = nan; % #ok<NASGU>
         abort = 0;
         
         % load image of car or house - car - stim_id = 0; house - stim_id = 1 
@@ -462,7 +470,7 @@ p.subject = subject;
         colorCross = p.stim.bg; % color of the Cross [R G B]
 
         d1 = 0.6; % diameter of outer circle (degrees)
-        d2 = 0.2; % diameter of inner circle (degrees)
+        d2 = 0.14; % 0.2; % diameter of inner circle (degrees)
 
         Screen('FillOval', p.ptb.w, colorOval, [p.ptb.CrossPosition_x-d1/2 * p.display.ppd, p.ptb.CrossPosition_y-d1/2 * p.display.ppd, p.ptb.CrossPosition_x+d1/2 * p.display.ppd, p.ptb.CrossPosition_y+d1/2 * p.display.ppd], d1 * p.display.ppd);
         Screen('DrawLine', p.ptb.w, colorCross, p.ptb.CrossPosition_x-d1/2 * p.display.ppd, p.ptb.CrossPosition_y, p.ptb.CrossPosition_x+d1/2 * p.display.ppd, p.ptb.CrossPosition_y, d2 * p.display.ppd);
@@ -588,8 +596,8 @@ p.subject = subject;
             case 1
                 p.responseDevice = 'lumina';
                 p.syncboxEnabled=1;
-                p.LuminaHandle = IOPort('OpenSerialPort','COM3', 'ReadTimeout', 30);
-                IOPort('Flush',p.LuminaHandle);     
+%                 p.LuminaHandle = IOPort('OpenSerialPort','COM3', 'ReadTimeout', 30);
+%                 IOPort('Flush',p.LuminaHandle);     
         end
         
         %% keys to be used during the experiment: - CHECK FOR MRI RESPONSE BOX - 

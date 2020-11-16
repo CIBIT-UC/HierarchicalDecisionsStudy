@@ -10,6 +10,9 @@ rng('shuffle'); % to be really random!
 debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
 small_window = 0; % Open a small window only
 
+% close ports - scanner
+IOPort('CloseAll');
+
 %% >>>>> Set up a lot of stuff
 abort = false; % 
 start_time = GetSecs;
@@ -32,7 +35,9 @@ if fmri == 0
     KbQueueStop(p.ptb.device);
     KbQueueRelease(p.ptb.device);
 else
+    p.LuminaHandle = IOPort('OpenSerialPort','COM4'); 
     IOPort('Flush',p.LuminaHandle); 
+    KbName('UnifyKeyNames')
 end
 
 while 1
@@ -104,9 +109,6 @@ end
     end
 
    function [p, RT, keycodes, response_times, abort] = choice_trial(p, ChoiceStimOnset, theImageLocation)
-%         rule = nan;
-        response = nan;
-        RT = nan; %#ok<NASGU>
         abort = false;
         
         % load image of face or house - face - stim_id = 0; house - stim_id = 1 
@@ -134,9 +136,9 @@ end
         % Flip to the screen
         % STIMULUS ONSET
         TimeStimOnset  = Screen('Flip', p.ptb.w, ChoiceStimOnset, 0);    
-        start_rt_counter  = TimeStimOnset;
+%         start_rt_counter  = TimeStimOnset;
         % Now wait for response!
-        response = nan;
+        response = nan; response_times = nan; keys_pressed = nan;
         RT = nan;
         if fmri == 1
             while GetSecs<TimeStimOnset+ 0.2-p.ptb.slack
@@ -146,7 +148,9 @@ end
                     IOPort('Flush',p.LuminaHandle);
                     % Save responses 
                     keys_pressed = [keys_pressed; key];
-                    times_pressed = [times_pressed; timestamp];
+                    response_times = [response_times; timestamp];
+                    RT = [RT; timestamp-TimeStimOnset];
+%                     times_pressed = [times_pressed; timestamp];
                 end
             end
         end
@@ -159,17 +163,20 @@ end
                 [key,timestamp,~] = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
-                    % record responses 
+                    % Save responses 
                     keys_pressed = [keys_pressed; key];
-                    times_pressed = [times_pressed; timestamp];
+                    response_times = [response_times; timestamp];
+                    RT = [RT; timestamp-TimeStimOnset];
+%                     times_pressed = [times_pressed; timestamp];
                 end
             end 
+            keycodes = keys_pressed;
         else
             WaitSecs(1.8);
             % Now record response
-            keycodes = nan; response_times = nan;
             [keycodes, response_times] = KbQueueDump(p);
             key_pressed = KbName(keycodes); if strcmp(key_pressed, 'q'), abort = 1; end
+            RT = response_times-TimeStimOnset;
         end
    end
 
@@ -265,7 +272,7 @@ end
         colorCross = p.stim.bg; % color of the Cross [R G B]
 
         d1 = 0.6; % diameter of outer circle (degrees)
-        d2 = 0.2; % diameter of inner circle (degrees)
+        d2 = 0.14; %0.2; % diameter of inner circle (degrees)
 
         Screen('FillOval', p.ptb.w, colorOval, [p.ptb.CrossPosition_x-d1/2 * p.display.ppd, p.ptb.CrossPosition_y-d1/2 * p.display.ppd, p.ptb.CrossPosition_x+d1/2 * p.display.ppd, p.ptb.CrossPosition_y+d1/2 * p.display.ppd], d1 * p.display.ppd);
         Screen('DrawLine', p.ptb.w, colorCross, p.ptb.CrossPosition_x-d1/2 * p.display.ppd, p.ptb.CrossPosition_y, p.ptb.CrossPosition_x+d1/2 * p.display.ppd, p.ptb.CrossPosition_y, d2 * p.display.ppd);
@@ -348,8 +355,8 @@ end
             case 1
                 p.responseDevice = 'lumina';
                 p.syncboxEnabled=1;
-                p.LuminaHandle = IOPort('OpenSerialPort','COM3', 'ReadTimeout', 30);
-                IOPort('Flush',p.LuminaHandle);     
+%                 p.LuminaHandle = IOPort('OpenSerialPort','COM4');
+%                 IOPort('Flush',p.LuminaHandle);     
         end
         
         %% keys to be used during the experiment:
@@ -773,66 +780,70 @@ end
      correct_trial = 0;
         if ~isnan(keycodes)
             for iii = 1:length(keycodes)
-                keys = KbName(keycodes(iii));
+                if fmri == 0
+                    keys = KbName(keycodes(iii));
+                else
+                    keys = num2str(keycodes(iii));
+                end
                 if iii == length(keycodes) % what counts for accuracy is last response
                     if strcmp(language, 'PT')
                         if rule == 0
                             if gener_side > 0 && stim_id == 0 % bottom and faces
-                                if strcmp(keys, 'm')
+                                if strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    correct_trial = 1;
                                    text = ['Correto! \n', text_bottom_PT];
-                                elseif strcmp(keys, 'z')
+                                elseif strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    text = ['Errado! \n', text_bottom_PT];
                                 end
                             elseif gener_side >0 && stim_id ==1 % bottom and houses 
-                                if strcmp(keys, 'z')
+                                if strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    correct_trial = 1;
                                    text = ['Correto! \n', text_bottom_PT];  
-                                elseif strcmp(keys, 'm')
+                                elseif strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    text = ['Errado! \n', text_bottom_PT]; 
                                 end
                             elseif gener_side <0 && stim_id ==0 % top and faces
-                                if strcmp(keys, 'z')
+                                if strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    correct_trial = 1;
                                    text = ['Correto! \n', text_top_PT'];  
-                                elseif strcmp(keys, 'm')
+                                elseif strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    text = ['Errado! \n', text_top_PT];  
                                 end
                             elseif gener_side < 0 && stim_id == 1 % top and houses
-                                if strcmp(keys, 'm')
+                                if strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    correct_trial = 1;
                                    text = ['Correto! \n', text_top_PT]; 
-                                elseif strcmp(keys, 'z')
-                                   text = ['Errado! \n', text_top_PT];  
+                                elseif strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
+                                   text = ['Errado! \n', text_top_PT];
                                 end
                             end
                         elseif rule == 1    
                              if gener_side > 0 && stim_id == 0 % bottom and faces
-                                if strcmp(keys, 'z')
+                                if strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    correct_trial = 1;
                                    text = ['Correto! \n', text_bottom_PT]; 
-                                elseif strcmp(keys, 'm')
+                                elseif strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    text = ['Errado! \n', text_bottom_PT];  
                                 end
                             elseif gener_side >0 && stim_id ==1 % bottom and houses 
-                                if strcmp(keys, 'm')
+                                if strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    correct_trial = 1;
                                   text = ['Correto! \n', text_bottom_PT];  
-                                elseif strcmp(keys, 'z')
+                                elseif strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    text = ['Errado! \n', text_bottom_PT];  
                                 end
                             elseif gener_side <0 && stim_id ==0 % top and faces
-                                if strcmp(keys, 'm')
+                                if strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    correct_trial = 1;
                                    text = ['Correto! \n',  text_top_PT]; 
-                                elseif strcmp(keys, 'z')
+                                elseif strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    text = ['Errado! \n', text_top_PT];
                                 end
                             elseif gener_side < 0 && stim_id == 1 % top and houses
-                                if strcmp(keys, 'z')
+                                if strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    correct_trial = 1;
                                    text = ['Correto! \n',  text_top_PT];  
-                                elseif strcmp(keys, 'm')
+                                elseif strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    text = ['Errado! \n',  text_top_PT];
                                 end
                              end 
@@ -840,61 +851,61 @@ end
                     else
                         if rule == 0
                             if gener_side > 0 && stim_id == 0 % bottom and faces
-                                if strcmp(keys, 'm')
+                                if strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    correct_trial = 1;
                                    text = ['Correct! \n', text_bottom_EN];
-                                elseif strcmp(keys, 'z')
+                                elseif strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    text = ['Wrong! \n', text_bottom_EN];
                                 end
                             elseif gener_side >0 && stim_id ==1 % bottom and houses 
-                                if strcmp(keys, 'z')
+                                if strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    correct_trial = 1;
                                    text = ['Correct! \n', text_bottom_EN];
-                                elseif strcmp(keys, 'm')
+                                elseif strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    text = ['Wrong! \n', text_bottom_EN]; 
                                 end
                             elseif gener_side <0 && stim_id ==0 % top and faces
-                                if strcmp(keys, 'z')
+                                if strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    correct_trial = 1;
                                    text = ['Correct! \n', text_top_EN];  
-                                elseif strcmp(keys, 'm')
+                                elseif strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    text = ['Wrong! \n', text_top_EN];  
                                 end
                             elseif gener_side < 0 && stim_id == 1 % top and houses
-                                if strcmp(keys, 'm')
+                                if strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    correct_trial = 1;
                                    text = ['Correct! \n', text_top_EN]; 
-                                elseif strcmp(keys, 'z')
+                                elseif strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    text = ['Wrong! \n', text_top_EN];  
                                 end
                             end
                         elseif rule == 1    
                              if gener_side > 0 && stim_id == 0 % bottom and faces
-                                if strcmp(keys, 'z')
+                                if strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    correct_trial = 1;
                                    text = ['Correct! \n', text_bottom_EN]; 
-                                elseif strcmp(keys, 'm')
+                                elseif strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    text = ['Wrong! \n', text_bottom_EN];   
                                 end
                             elseif gener_side >0 && stim_id ==1 % bottom and houses 
-                                if strcmp(keys, 'm')
+                                if strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    correct_trial = 1;
                                   text = ['Correct! \n', text_bottom_EN];  
-                                elseif strcmp(keys, 'z')
+                                elseif strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    text = ['Wrong! \n', text_bottom_EN];  
                                 end
                             elseif gener_side <0 && stim_id ==0 % top and faces
-                                if strcmp(keys, 'm')
+                                if strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    correct_trial = 1;
                                    text = ['Correct! \n', text_top_EN]; 
-                                elseif strcmp(keys, 'z')
+                                elseif strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    text = ['Wrong! \n', text_top_EN];
                                 end
                             elseif gener_side < 0 && stim_id == 1 % top and houses
-                                if strcmp(keys, 'z')
+                                if strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50')
                                    correct_trial = 1;
                                    text = ['Correct! \n', text_top_EN];  
-                                elseif strcmp(keys, 'm')
+                                elseif strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52')
                                    text = ['Wrong! \n', text_top_EN];
                                 end
                             end 
@@ -1211,7 +1222,7 @@ end
         end
         DrawFormattedText(p.ptb.w, text, 'center', round(p.ptb.rect(4)*0.5), p.stim.white,[],[],[],2,[]);
         Screen('Flip', p.ptb.w);
-        WaitSecs(10);
+        KbWait(p.ptb.device, 2, GetSecs()+15);
     end
 end
 
