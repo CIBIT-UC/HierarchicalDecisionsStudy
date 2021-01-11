@@ -6,7 +6,7 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
 % coloured_task = 0 (grey samples) or 1 (coloured samples according to source)
 % language = 'PT' or 'EN'
 % press 'q' on choice trials to quit
-NoEyelink = 1; %is Eyelink wanted?
+NoEyelink = 0; %is Eyelink wanted?
 debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
 small_window = 0; % Open a small window only
 % close ports - scanner
@@ -31,6 +31,11 @@ WaitSecs(0.001);
 
 el        = []; % eye-tracker variable
 p         = []; % parameter structure that contains all info about the experiment.
+
+% -- EYETRACKING
+% Do you want to use the Eyelink eyetracking in dummymode (1) or not (2) ?
+p.ET_dummymode = menu('Do you want to use the Eyelink eyetracking in dummymode?', 'Yes', 'No');
+if p.ET_dummymode==2, p.ET_dummymode = 0; end
 
 SetParams;%set parameters of the experiment
 SetPTB;%set visualization parameters.
@@ -110,11 +115,11 @@ p.subject = subject;
             IOPort('Read',p.LuminaHandle, 1, 1); %IOPort(‘Read’, handle [, blocking=0] [, amount]);
             pr = 1;
             while pr
-                key = IOPort('Read',response_box_handle);
+                key = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key) %&& (length(key) == 1)
                     pr = 0;
                 end
-                IOPort('Flush',response_box_handle);
+                IOPort('Flush',p.LuminaHandle);
             end
         end
         
@@ -125,14 +130,15 @@ p.subject = subject;
         else
             pr = 1;
             while pr
-                key = IOPort('Read',response_box_handle);
+                key = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key) %&& (length(key) == 1)
                     pr = 0;
                 end
-                IOPort('Flush',response_box_handle);
+                IOPort('Flush',p.LuminaHandle);
             end
         end
         
+        % start eye tracker
         p = InitEyeLink(p);
         CalibrateEL;
         
@@ -208,8 +214,7 @@ p.subject = subject;
         Eyelink('Message', ['SUBJECT ', p.subject]);
         p = Log(p, GetSecs, 'START_GLAZE', nan);
         p = Log(p, GetSecs, 'SUBJECT', p.subject);
-        
-        
+          
         draw_fix(p);
         WaitSecs(1);
 
@@ -263,14 +268,14 @@ p.subject = subject;
                     theImageLocation = p.choice_trials.file_names_houses{count_houses};
                 end
                 fprintf('\nCHOICE TRIAL; stim_id:%i, gener_side:%02.2f ', stim_id, gener_side>0);
-                [p, ~, keycodes, response_times, abort] = choice_trial(p, OnsetTime, stim_id, theImageLocation);
+                [p, RT, keycodes, response_times, abort] = choice_trial(p, OnsetTime, stim_id, theImageLocation);
                 if abort==1, return, end
                 % analysis accuracy of responses
                 % NEED TO INCLUDE RESPONSES IN SCANNER!!!!
                 correct = 0;
                 if ~isnan(keycodes)
                     for iii = 1:length(keycodes)
-                        RT = response_times(iii);
+                        RT = RT(iii);
                         if fmri == 0
                            keys = KbName(keycodes(iii));
                         else
@@ -330,11 +335,8 @@ p.subject = subject;
     %  -----------------------------------
 
     function [p, RT, keycodes, response_times, abort] = choice_trial(p, ChoiceStimOnset, stim_id, theImageLocation)
-%         rule = nan;
-        response = nan; %#ok<NASGU>
-        RT = nan; % #ok<NASGU>
+
         abort = 0;
-        
         % load image of car or house - car - stim_id = 0; house - stim_id = 1 
         % Here we load in an image from file.
         theImage = imread(theImageLocation);
@@ -342,10 +344,8 @@ p.subject = subject;
         imageTexture = Screen('MakeTexture', p.ptb.w, theImage);
         % Draw the gaussian apertures  into our full screen aperture mask
         Screen('DrawTextures', p.gaussian_aperture.fullWindowMask, p.gaussian_aperture.masktex, [], p.gaussian_aperture.dstRects);
-
         % Draw the image to the screen
-        % left, top, right, bottom - size of image in pixels [0,0] = top left
-        % corner
+        % left, top, right, bottom - size of image in pixels [0,0] = top left corner
         NewImageRect = [0 0 300 300];
         NewImageRect_centered = CenterRectOnPointd(NewImageRect, p.ptb.width / 2, p.ptb.height / 2);
         Screen('DrawTexture', p.ptb.w, imageTexture, [], NewImageRect_centered, 0);
@@ -356,16 +356,19 @@ p.subject = subject;
             p = dump_keys(p);
             KbQueueFlush(p.ptb.device);        
         elseif fmri == 1   
-            IOPort('Flush',p.LuminaHandle); %cat% 
+            IOPort('Flush',p.LuminaHandle);
         end
         
         % Flip to the screen
         % STIMULUS ONSET
         TimeStimOnset  = Screen('Flip', p.ptb.w, ChoiceStimOnset, 0);    
-        start_rt_counter  = TimeStimOnset;
+%         start_rt_counter  = TimeStimOnset;
         p = Log(p,TimeStimOnset, 'CHOICE_TRIAL_ONSET', stim_id);
         Eyelink('Message', sprintf('CHOICE_TRIAL_ONSET %i', stim_id));
         draw_fix(p);
+
+        % record responses
+        keycodes = nan; RT = nan; response_times = nan;
         if fmri == 1
             while GetSecs<TimeStimOnset+ 0.2-p.ptb.slack
                 % listen to button presses      
@@ -373,8 +376,10 @@ p.subject = subject;
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
                     % Save responses 
-                    keys_pressed = [keys_pressed; key];
-                    times_pressed = [times_pressed; timestamp];
+                    keycodes = [keycodes; key];
+                    reaction_time = timestamp - TimeStimOnset;
+                    RT = [RT; reaction_time];
+                    response_times = [response_times; timestamp];
                 end
             end
         end
@@ -388,16 +393,18 @@ p.subject = subject;
                 [key,timestamp,~] = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
-                    % record responses 
-                    keys_pressed = [keys_pressed; key];
-                    times_pressed = [times_pressed; timestamp];
+                    % Save responses 
+                    keycodes = [keycodes; key];
+                    reaction_time = timestamp - TimeStimOnset;
+                    RT = [RT; reaction_time];
+                    response_times = [response_times; timestamp];
                 end
             end 
         else
             WaitSecs(1.8);
             % Now record response
-            keycodes = nan; response_times = nan;
             [keycodes, response_times] = KbQueueDump(p);
+            RT = response_times - TimeStimOnset;
             key_pressed = KbName(keycodes); if strcmp(key_pressed, 'q'), abort = 1; end
         end
     end
@@ -588,7 +595,6 @@ p.subject = subject;
             case 0
                 p.responseDevice = 'keyboard';
                 p.syncboxEnabled = 0;
-                KbName('UnifyKeyNames');
 %                 Screen('FillRect', p.ptb.w, p.stim.bg);
 %                 DrawFormattedText(p.ptb.w, 'Ready...', 'center', 'center', p.stim.white,[],[],[],2,[]);
 %                 Screen('Flip',p.ptb.w);
@@ -610,7 +616,7 @@ p.subject = subject;
         %4, 9 ==> Up (confirm)
         %5    ==> Pulse from the scanner
 
-%         KbName('UnifyKeyNames');
+        KbName('UnifyKeyNames');
         p.keys.confirm                 = '4$';%
 %         p.keys.answer_a                = {'1!', '2@', '3#', '4$'};
 %         p.keys.answer_a_train          = 'z';
@@ -657,40 +663,10 @@ p.subject = subject;
         Screen('Preference', 'DefaultFontName', p.text.fontname);
         Screen('Preference', 'TextAntiAliasing',2);%enable textantialiasing high quality
         Screen('Preference', 'VisualDebuglevel', 0);
-        Screen('Preference', 'SkipSyncTests', 1);
         Screen('Preference', 'SuppressAllWarnings', 1);
+        
         %%Find the number of the screen to be opened
         screens                     =  Screen('Screens');
-%         if strcmp(p.hostname, 'larry.local')
-%             p.ptb.screenNumber          =  min(screens);%the maximum is the second monitor
-%             [idx, names, ~] = GetKeyboardIndices;
-%             p.ptb.device = nan;
-%             for iii = 1:length(idx)
-%                 if strcmp(names{iii}, '')
-%                     p.ptb.device = idx(iii);
-%                     break
-%                 elseif strcmp(names{iii}, 'Apple Internal Keyboard / Trackpad') && isnan(p.ptb.device)
-%                     p.ptb.device = idx(iii);
-%                     break
-%                 end
-%             end
-%             fprintf('Device name is: %s\n', names{iii})
-%             gamma = load('dell241i_calibration.mat');
-%             p.ptb.gamma = gamma.gTmp;
-%         elseif strcmp(p.hostname, 'donnerlab-Precision-T1700')
-%             p.ptb.screenNumber          =  0;
-%             [idx, names, ~] = GetKeyboardIndices;
-%             p.ptb.device = nan;
-%             for iii = 1:length(idx)
-%                 if strcmp(names{iii}, 'DELL Dell USB Entry Keyboard')
-%                     p.ptb.device = idx(iii);
-%                     break
-%                 end
-%             end
-%             p.ptb.device
-%             gamma = load('vpixx_gamma_table.mat');
-%             p.ptb.gamma = gamma.table;
-%         else
         p.ptb.screenNumber   = max(screens);%the maximum is the second monitor
         [idx, names, ~] = GetKeyboardIndices;
         p.ptb.device = idx;
@@ -756,7 +732,7 @@ p.subject = subject;
         for i = fields(p.keys)'
             p.ptb.keysOfInterest = [p.ptb.keysOfInterest KbName(p.keys.(i{1}))];
         end
-        RestrictKeysForKbCheck(p.ptb.keysOfInterest);
+%         RestrictKeysForKbCheck(p.ptb.keysOfInterest);
         KbQueueCreate(p.ptb.device);%, p.ptb.keysOfInterest);%default device.
      
         Screen('TextSize', p.ptb.w,  20);
@@ -794,22 +770,37 @@ p.subject = subject;
             p.gaussian_aperture.dstRects(:, i) = CenterRectOnPointd([0 0 size(mask, 1), size(mask, 2)], xg(i), yg(i));
         end
         
+        % Trick suggested by the PTB authors to avoid synchronization/calibration
+        % problems
+        figure(1)
+        plot(sin(0:0.1:3.14));
+        % Close figure with sin plot (PTB authors trick for synchronization)
+        close Figure 1
+        
     end
 
 
     function p=InitEyeLink(p)
-        %
-        if EyelinkInit(NoEyelink)%use 0 to init normaly
-            fprintf('=================\nEyelink initialized correctly...\n')
-        else
-            fprintf('=================\nThere is problem in Eyelink initialization\n')
-            keyboard;
+        % Initialization of the connection with the Eyelink Gazetracker
+        % if we are not in dummy mode
+        if ~EyelinkInit(p.ET_dummymode, 1)
+            fprintf('Eyelink Init aborted.\n');
+            cleanup;  % cleanup function
+            return
         end
+%         if EyelinkInit(NoEyelink)%use 0 to init normaly
+%             fprintf('=================\nEyelink initialized correctly...\n')
+%         else
+%             fprintf('=================\nThere is problem in Eyelink initialization\n')
+%             keyboard;
+%         end
         %
         WaitSecs(0.5);
         [~, vs] = Eyelink('GetTrackerVersion');
         fprintf('=================\nRunning experiment on a ''%s'' tracker.\n', vs );
 
+
+        
         %
         el                          = EyelinkInitDefaults(p.ptb.w);
         %update the defaults of the eyelink tracker
@@ -869,7 +860,8 @@ p.subject = subject;
         Eyelink('command', 'file_event_filter = LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON,INPUT');
         Eyelink('command', 'use_ellipse_fitter = no');
         % set sample rate in camera setup screen
-        Eyelink('command', 'sample_rate = %d',1000);
+%         Eyelink('command', 'sample_rate = %d',1000);
+        Eyelink('command', 'sample_rate = %d',500);
 
     end
 

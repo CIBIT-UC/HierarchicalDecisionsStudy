@@ -51,13 +51,13 @@ while 1
 
     break
 end
-    end_time = GetSecs; p.training_time=(end_time-start_time)/60;
-    fprintf('Esta sessao demorou %d minutes.\n',(end_time-start_time)/60);
-    % save data
-    mkdir([pwd, '/training_data']);
-    save([pwd, '/training_data/', subject, '_training.mat'], 'p');
-    %stop the queue and close screen etc
-    cleanup;
+        end_time = GetSecs; p.training_time=(end_time-start_time)/60;
+        fprintf('Esta sessao demorou %d minutes.\n',(end_time-start_time)/60);
+        % save data
+        mkdir([pwd, '/training_data']);
+        save([pwd, '/training_data/', subject, '_training.mat'], 'p');
+        %stop the queue and close screen etc
+        cleanup;
         
     %% -----------------------------------
     %  Trial functions
@@ -93,7 +93,7 @@ end
         TimeStimOnset  = Screen('Flip', p.ptb.w, ChoiceStimOnset, 0);    
 %         start_rt_counter  = TimeStimOnset;
         % Now wait for response!
-        response = nan; response_times = nan; keycodes = nan;
+        response = nan; response_times = nan; keys_pressed = nan;
         RT = nan;
         if fmri == 1
             while GetSecs<TimeStimOnset+ 0.2-p.ptb.slack
@@ -102,9 +102,10 @@ end
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
                     % Save responses 
-                    keycodes = [keycodes; key];
+                    keys_pressed = [keys_pressed; key];
                     response_times = [response_times; timestamp];
                     RT = [RT; timestamp-TimeStimOnset];
+%                     times_pressed = [times_pressed; timestamp];
                 end
             end
         end
@@ -118,7 +119,7 @@ end
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
                     % Save responses 
-                    keycodes = [keycodes; key];
+                    keys_pressed = [keys_pressed; key];
                     response_times = [response_times; timestamp];
                     RT = [RT; timestamp-TimeStimOnset];
 %                     times_pressed = [times_pressed; timestamp];
@@ -291,26 +292,26 @@ end
         %5    ==> Pulse from the scanner
 
         KbName('UnifyKeyNames');
-% %         p.keys.confirm                 = '4$';%
-% %         p.keys.answer_a                = {'1!', '2@', '3#', '4$'};
-%         p.keys.answer_a_train          = 'z'; % left
-% %         p.keys.answer_b                = {'6^', '7&', '8*', '9('};
-%         p.keys.answer_b_train          = 'm'; % right
-% %         p.keys.pulse                   = '5%';
-%         p.keys.up_arrow                = 'UpArrow';
-% %         p.keys.down_arrow              = 'DownArrow';
-%         p.keys.down_arrow              = 'LeftArrow';
-%         p.keys.repeat_training         = 'i';
-%         p.keys.move_on                 = 'p';        
-%         p.keys.el_calib                = 'v';
-%         p.keys.el_valid                = 'c';
-%         p.keys.escape                  = 'ESCAPE';
-%         p.keys.enter                   = 'return';
-%         p.keys.quit                    = 'q';
-%         p.keylist = {p.keys.answer_a_train,...
-%             p.keys.answer_b_train, p.keys.up_arrow, p.keys.down_arrow,...
-%             p.keys.repeat_training, p.keys.move_on, ...
-%             p.keys.el_calib, p.keys.el_valid, p.keys.enter};
+%         p.keys.confirm                 = '4$';%
+%         p.keys.answer_a                = {'1!', '2@', '3#', '4$'};
+        p.keys.answer_a_train          = 'z'; % left
+%         p.keys.answer_b                = {'6^', '7&', '8*', '9('};
+        p.keys.answer_b_train          = 'm'; % right
+%         p.keys.pulse                   = '5%';
+        p.keys.up_arrow                = 'UpArrow';
+%         p.keys.down_arrow              = 'DownArrow';
+        p.keys.down_arrow              = 'LeftArrow';
+        p.keys.repeat_training         = 'i';
+        p.keys.move_on                 = 'p';        
+        p.keys.el_calib                = 'v';
+        p.keys.el_valid                = 'c';
+        p.keys.escape                  = 'ESCAPE';
+        p.keys.enter                   = 'return';
+        p.keys.quit                    = 'q';
+        p.keylist = {p.keys.answer_a_train,...
+            p.keys.answer_b_train, p.keys.up_arrow, p.keys.down_arrow,...
+            p.keys.repeat_training, p.keys.move_on, ...
+            p.keys.el_calib, p.keys.el_valid, p.keys.enter};
         %% %%%%%%%%%%%%%%%%%%%%%%%%%
 
         %%
@@ -326,6 +327,8 @@ end
         Screen('Preference', 'DefaultFontSize', p.text.fontsize);
         Screen('Preference', 'DefaultFontName', p.text.fontname);
         Screen('Preference', 'TextAntiAliasing',2);%enable textantialiasing high quality
+        Screen('Preference', 'VisualDebuglevel', 0);
+        Screen('Preference', 'SkipSyncTests', 1);
         Screen('Preference', 'SuppressAllWarnings', 1);
 
         
@@ -427,11 +430,11 @@ end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%Prepare the keypress queue listening.
 
         %get all the required keys in a vector
-%         p.ptb.keysOfInterest = [];
-%         for i = fields(p.keys)'
-%             p.ptb.keysOfInterest = [p.ptb.keysOfInterest KbName(p.keys.(i{1}))];
-%         end
-%         RestrictKeysForKbCheck(p.ptb.keysOfInterest);
+        p.ptb.keysOfInterest = [];
+        for i = fields(p.keys)'
+            p.ptb.keysOfInterest = [p.ptb.keysOfInterest KbName(p.keys.(i{1}))];
+        end
+        RestrictKeysForKbCheck(p.ptb.keysOfInterest);
         KbQueueCreate(p.ptb.device);%, p.ptb.keysOfInterest);%default device.
 
 %         fix  = [p.ptb.CrossPosition_x p.ptb.CrossPosition_y];
@@ -843,10 +846,7 @@ end
         end
     end
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 027020019f048e382f4de3469f69b4d2f60ce147
     %% Hierarchical decisions training
     function p = hierarchical_decisions_training_phase(p, block, number_of_trials)
         if strcmp(language, 'PT')
@@ -958,7 +958,7 @@ end
                     theImageLocation = p.choice_trials.file_names_houses{count_houses};
                 end
 %                             fprintf('\nCHOICE TRIAL; stim_id:%i, gener_side:%02.2f ', stim_id, gener_side>0);
-                [p, RT, keycodes, ~, abort] = choice_trial(p, OnsetTime, theImageLocation);
+                [p, ~, keycodes, ~, abort] = choice_trial(p, OnsetTime, theImageLocation);
                 if abort ==1, return, end
                 % analysis accuracy of responses
                 [correct_trial, text] = hierarchical_decision_accuracy(keycodes, gener_side, stim_id, rule_hierarchical_decision);
