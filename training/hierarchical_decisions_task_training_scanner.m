@@ -843,9 +843,6 @@ end
         end
     end
 
-<<<<<<< HEAD
-=======
->>>>>>> 027020019f048e382f4de3469f69b4d2f60ce147
     %% Hierarchical decisions training
     function p = hierarchical_decisions_training_phase(p, block, number_of_trials)
         if strcmp(language, 'PT')
