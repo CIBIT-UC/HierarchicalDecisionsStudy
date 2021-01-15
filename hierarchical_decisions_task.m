@@ -90,7 +90,10 @@ p.subject = subject;
         else
             p.LuminaHandle = IOPort('OpenSerialPort','COM4'); 
             IOPort('Flush',p.LuminaHandle); 
-            KbName('UnifyKeyNames')
+            % to listen to keyboard as well
+            KbQueueStop(p.ptb.device);
+            KbQueueRelease(p.ptb.device);
+            KbQueueCreate(p.ptb.device);
             if strcmp(language, 'PT')
                 text = ['Durante a tarefa, mantenha o olhar fixo no alvo de fixação,\n'...
                     'não mexa a cabeça e não fale.\n\n'...
@@ -150,7 +153,7 @@ p.subject = subject;
             SynchBox = IOPort('OpenSerialPort', 'COM5', 'BaudRate=57600 DataBits=8 Parity=None StopBits=1 FlowControl=None');
             IOPort('Flush',SynchBox);
             [TriggerReceived, StartTime]=waitForTrigger(SynchBox,1,1000); %
-
+            p.MRItrigger_time = [StartTime, GetSecs];
             if ~ TriggerReceived
                 disp('Did not receive trigger - aborting stim');
                 sca; return
@@ -165,6 +168,7 @@ p.subject = subject;
         % Need to show feedback here!
         p.sum_outcomes = sum(outcomes);
         p.accuracy_rate = p.sum_outcomes/length(outcomes);
+        p = save_data(p);
         if strcmp(language, 'PT')
             text = sprintf('Nesta sessão acertou %2.0f%% das respostas.\n', 100*p.accuracy_rate);
         else
@@ -177,7 +181,7 @@ p.subject = subject;
         
     end
     p = dump_keys(p);
-    p = save_data(p);
+
     %stop the queue
     if fmri == 0
         KbQueueStop(p.ptb.device);
@@ -193,7 +197,7 @@ p.subject = subject;
     function [p, outcomes] = GlazeBlock(p, coloured_task)
         % 4.8 Check data save
 %         abort=false;
-        p.start_time = datestr(now, 'dd-mmm-yyTHHMM'); %p.start_time = datestr(now, 'dd-mmm-yy-HH:MM:SS');
+        p.start_time_task = datestr(now, 'dd-mmm-yyTHHMM'); %p.start_time = datestr(now, 'dd-mmm-yy-HH:MM:SS');
 
         Screen('FillRect',p.ptb.w,p.stim.bg);
         Screen('Flip',p.ptb.w);
@@ -226,10 +230,10 @@ p.subject = subject;
         count_cars = 0; count_houses = 0; % to determine which image to show
         for trial  = 1:size(p.sequence.stim, 2)
             %Get the variables that Trial function needs.
-            stim_id       = p.sequence.stim(trial);
-            type          = p.sequence.type(trial);
-            location      = p.sequence.sample(trial);
-            gener_side    = p.sequence.generating_side(trial);
+            stim_id       = p.sequence.stim(trial); % nan = sample trial; car - stim_id = 0; house - stim_id = 1 
+            type          = p.sequence.type(trial); % 0 = sample trial; 1 = choice trial
+            location      = p.sequence.sample(trial); % location negative = up; location positive = down
+            gener_side    = p.sequence.generating_side(trial);% negative = upper source; positive = lower source
 %             OnsetTime     = start+p.sequence.stimulus_onset(trial);
             OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
 %             if location < 0
@@ -275,13 +279,13 @@ p.subject = subject;
                 correct = 0;
                 if ~isnan(keycodes)
                     for iii = 1:length(keycodes)
-                        RT = RT(iii);
+                        ReactionTime = RT(iii);
                         if fmri == 0
                            keys = KbName(keycodes(iii));
                         else
-                           keys =  num2str(keycodes(iii));
+                           keys = num2str(keycodes(iii));
                         end
-                        p = Log(p, RT, 'BUTTON_PRESS', keys); % save info for all responses so we know if it was corrected
+                        p = Log(p, ReactionTime, 'BUTTON_PRESS', keys); % save info for all responses so we know if it was corrected
                         if iii == length(keycodes) % what counts for accuracy is last response
                             if gener_side > 0 && stim_id == 0 % bottom and cars
                                 if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
@@ -309,7 +313,6 @@ p.subject = subject;
                                 end
                             end
                         end
-
                     end
                 else
                     p = Log(p, stim_id, 'NO_RESPONSE', NaN);
@@ -368,7 +371,7 @@ p.subject = subject;
         draw_fix(p);
 
         % record responses
-        keycodes = nan; RT = nan; response_times = nan;
+        keycodes = []; RT = []; response_times = [];
         if fmri == 1
             while GetSecs<TimeStimOnset+ 0.2-p.ptb.slack
                 % listen to button presses      
@@ -376,7 +379,7 @@ p.subject = subject;
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
                     % Save responses 
-                    keycodes = [keycodes; key];
+                    keycodes = [keycodes, key];
                     reaction_time = timestamp - TimeStimOnset;
                     RT = [RT; reaction_time];
                     response_times = [response_times; timestamp];
@@ -384,7 +387,7 @@ p.subject = subject;
             end
         end
         
-        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+ 0.2 -p.ptb.slack, 0);  %<----- FLIP                    
+        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+.2 -p.ptb.slack, 0);  %<----- FLIP             
         p = Log(p,TimeStimOffset, 'CHOICE_TRIAL_STIMOFF', nan);
         Eyelink('Message', 'CHOICE_TRIAL_STIMOFF');
         if fmri == 1
@@ -394,7 +397,7 @@ p.subject = subject;
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
                     % Save responses 
-                    keycodes = [keycodes; key];
+                    keycodes = [keycodes, key];
                     reaction_time = timestamp - TimeStimOnset;
                     RT = [RT; reaction_time];
                     response_times = [response_times; timestamp];
@@ -428,8 +431,8 @@ p.subject = subject;
         draw_fix(p);
             
         if coloured_task == 1
-            % sample generated by left source coloured blue
-            % sample generated by right cource coloured orange
+            % sample generated by lower source coloured blue
+            % sample generated by upper source coloured orange
             if gener_side<0
                 colour=[0 70 0]; %green
             else
@@ -442,15 +445,8 @@ p.subject = subject;
         Screen('FillOval', p.ptb.w, colour+o, rin);
 
         ActSampleOnset  = Screen('Flip',p.ptb.w, SampleOnset, 0);      %<----- FLIP
-        if gener_side<0
-            Eyelink('message', sprintf('sample_neg %f', location));
-            p = Log(p,ActSampleOnset, 'SAMPLE_ONSET_NEG', location);
-            Eyelink('message', sprintf('sample_pos %f', location));
-            p = Log(p,ActSampleOnset, 'SAMPLE_ONSET_POS', location);
-        end
-%         Eyelink('message', sprintf('sample %f', location)); 
-%         p = Log(p,ActSampleOnset, 'SAMPLE_ONSET', location, p.phase_variable, p.block);
-        %MarkCED( p.com.lpt.address, p.com.lpt.event);
+        Eyelink('message', sprintf('sample_onset %f', location));
+        p = Log(p,ActSampleOnset, 'SAMPLE_ONSET', location);
         draw_fix(p);
         TimeSampleOffset = Screen('Flip',p.ptb.w, ActSampleOnset+p.sample_duration, 0);     %<----- FLIP
         draw_fix(p);

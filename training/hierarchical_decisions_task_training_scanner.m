@@ -46,7 +46,7 @@ while 1
 
     %% hierarchical decisions training phase
     block = 2;
-    number_of_trials = 400;
+    number_of_trials = 100;%400;
     p = hierarchical_decisions_training_phase(p, block, number_of_trials);
 
     break
@@ -124,7 +124,7 @@ end
 %                     times_pressed = [times_pressed; timestamp];
                 end
             end 
-            keycodes = keys_pressed;
+%             keycodes = keys_pressed;
         else
             WaitSecs(1.8);
             % Now record response
@@ -872,11 +872,11 @@ end
             IOPort('Read',p.LuminaHandle, 1, 1); %IOPort(‘Read’, handle [, blocking=0] [, amount]);
             pr = 1;
             while pr
-                key = IOPort('Read',response_box_handle);
+                key = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key) %&& (length(key) == 1)
                     pr = 0;
                 end
-                IOPort('Flush',response_box_handle);
+                IOPort('Flush',p.LuminaHandle);
             end
         end
 
@@ -888,11 +888,11 @@ end
             IOPort('Read',p.LuminaHandle, 1, 1); %IOPort(‘Read’, handle [, blocking=0] [, amount]);
             pr = 1;
             while pr
-                key = IOPort('Read',response_box_handle);
+                key = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key) %&& (length(key) == 1)
                     pr = 0;
                 end
-                IOPort('Flush',response_box_handle);
+                IOPort('Flush',p.LuminaHandle);
             end
         end
         
@@ -961,9 +961,21 @@ end
                 correct = correct + correct_trial;
                 if feedback == 1
                     DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-                    Screen('Flip', p.ptb.w);
-                    [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-                    key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end     
+                    Screen('Flip', p.ptb.w);  
+                    if fmri == 0
+                        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+                        key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end %return?
+                    else
+                        IOPort('Read',p.LuminaHandle, 1, 1); %IOPort(‘Read’, handle [, blocking=0] [, amount]);
+                        pr = 1;
+                        while pr
+                            key = IOPort('Read',p.LuminaHandle);
+                            if ~isempty(key) %&& (length(key) == 1)
+                                pr = 0;
+                            end
+                            IOPort('Flush',p.LuminaHandle);
+                        end
+                    end
                 end
                 ActSampleOnset = GetSecs;
                 p = dump_keys(p);
