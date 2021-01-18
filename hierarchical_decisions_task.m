@@ -7,7 +7,7 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
 % language = 'PT' or 'EN'
 % press 'q' on choice trials to quit
 NoEyelink = 0; %is Eyelink wanted?
-debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
+debug   = 1; % debug mode => 1: transparent window enabling viewing the background.
 small_window = 0; % Open a small window only
 % close ports - scanner
 IOPort('CloseAll');
@@ -98,7 +98,7 @@ p.subject = subject;
                 text = ['Durante a tarefa, mantenha o olhar fixo no alvo de fixação,\n'...
                     'não mexa a cabeça e não fale.\n\n'...
                     'Use o botão da esquerda para resposta à esquerda.\n'...
-                    'Use p botão da direita para resposta à direita.\n\n'...
+                    'Use o botão da direita para resposta à direita.\n\n'...
                     'Carregue num botão para avançar.\n'];
             else
                 text = ['During the task, keep your eyes fixed on the fixation target, \ n' ...
@@ -275,7 +275,6 @@ p.subject = subject;
                 [p, RT, keycodes, response_times, abort] = choice_trial(p, OnsetTime, stim_id, theImageLocation);
                 if abort==1, return, end
                 % analysis accuracy of responses
-                % NEED TO INCLUDE RESPONSES IN SCANNER!!!!
                 correct = 0;
                 if ~isnan(keycodes)
                     for iii = 1:length(keycodes)
@@ -286,6 +285,7 @@ p.subject = subject;
                            keys = num2str(keycodes(iii));
                         end
                         p = Log(p, ReactionTime, 'BUTTON_PRESS', keys); % save info for all responses so we know if it was corrected
+                        % in scanner left responses = 49 or 50; right responses 51 or 52
                         if iii == length(keycodes) % what counts for accuracy is last response
                             if gener_side > 0 && stim_id == 0 % bottom and cars
                                 if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
@@ -299,7 +299,7 @@ p.subject = subject;
                                 elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
                                     correct = correct+1;
                                 end
-                            elseif gener_side <0 && stim_id ==0 % top and faces
+                            elseif gener_side <0 && stim_id == 0 % top and faces
                                 if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
                                     correct = correct+1;
                                 elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
@@ -318,6 +318,8 @@ p.subject = subject;
                     p = Log(p, stim_id, 'NO_RESPONSE', NaN);
                 end
                 p = Log(p, stim_id, 'CHOICE_TRIAL_ACCURACY', correct);
+                unique_pressed{1} = unique(keycodes);
+                p = Log(p, length(keycodes), 'NUMBER_OF_RESPONSES', unique_pressed{1});
                 fprintf('ACCURACY: %i, ', correct);  
                 if correct == 1
                     outcomes = [outcomes 1]; %#ok<AGROW>
@@ -829,7 +831,11 @@ p.subject = subject;
 %         end
         % name of edf file to be created with eye tracking data - max
         % number of characters = 8
-        p.edffile = [p.subject(3:end), 'S', num2str(p.session), 'R', num2str(p.run)]; %sprintf('S%d_B%d.edf', p.subject,  p.block); % Maria
+        if length(p.subject) < 7
+            p.edffile = [p.subject(3:end), 'S', num2str(p.session), 'R', num2str(p.run)]; %sprintf('S%d_B%d.edf', p.subject,  p.block); % Maria
+        else
+            p.edffile = ['S', num2str(p.session), 'R', num2str(p.run)];
+        end     
         res = Eyelink('Openfile', p.edffile); %#ok<NASGU>
 
         Eyelink('command', 'screen_pixel_coords = %ld %ld %ld %ld', 0, 0, p.ptb.width-1, p.ptb.height-1);
@@ -965,7 +971,13 @@ p.subject = subject;
         p.save_time = datestr(now, 'yyyymmddTHHMMSS');
         rst = randstr(5);
         p.random_string = rst;
-        path_edf = fullfile(p.path.baselocation, sprintf(p.subject,  p.block));
+        if length(p.subject) < 7
+            p.edffile = [p.subject(3:end), 'S', num2str(p.session), 'R', num2str(p.run)]; %sprintf('S%d_B%d.edf', p.subject,  p.block); % Maria
+        else
+            p.edffile = ['S', num2str(p.session), 'R', num2str(p.run)];
+        end 
+%         path_edf = fullfile(p.path.baselocation, sprintf(p.subject,  p.block));
+        path_edf = fullfile(p.path.baselocation, p.edffile);
         path_data = [p.path.baselocation, filesep p.subject, rst];
         %get the eyelink file back to this computer
         StopEyelink(p.edffile,   path_edf);

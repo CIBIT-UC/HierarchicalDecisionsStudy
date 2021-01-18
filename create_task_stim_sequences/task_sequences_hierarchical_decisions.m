@@ -1,7 +1,7 @@
 % create sequence files for experiment
 % for each subject create before start experiment
 rng shuffle;
-subject = 'test_subj';
+subject = 'AB98';
 cd ..
 sbj_dir = [pwd '\exp_data' filesep subject];
 if ~exist(sbj_dir, 'dir')

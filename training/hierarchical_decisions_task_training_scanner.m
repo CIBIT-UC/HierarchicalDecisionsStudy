@@ -41,12 +41,12 @@ else
 end
 
 while 1
-    p.location_of_mean = [0.5, 0.25]; p.sd = [0.4, 0.4]; block = 2;
+    p.location_of_mean = [0.5, 0.25]; p.sd = [0.4, 0.4];
     coloured_task = 0;
 
     %% hierarchical decisions training phase
     block = 2;
-    number_of_trials = 100;%400;
+    number_of_trials = 400;
     p = hierarchical_decisions_training_phase(p, block, number_of_trials);
 
     break
@@ -92,9 +92,8 @@ end
         % STIMULUS ONSET
         TimeStimOnset  = Screen('Flip', p.ptb.w, ChoiceStimOnset, 0);    
 %         start_rt_counter  = TimeStimOnset;
-        % Now wait for response!
-        response = nan; response_times = nan; keycodes = nan;
-        RT = nan;
+        % record responses
+        keycodes = []; RT = []; response_times = [];
         if fmri == 1
             while GetSecs<TimeStimOnset+ 0.2-p.ptb.slack
                 % listen to button presses      
@@ -102,15 +101,15 @@ end
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
                     % Save responses 
-                    keycodes = [keycodes; key];
+                    keycodes = [keycodes, key];
+                    reaction_time = timestamp - TimeStimOnset;
+                    RT = [RT; reaction_time];
                     response_times = [response_times; timestamp];
-                    RT = [RT; timestamp-TimeStimOnset];
                 end
             end
         end
-        draw_fix(p);
-        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+ 0.2 -p.ptb.slack, 0);  %<----- FLIP  
         
+        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+.2 -p.ptb.slack, 0);  %<----- FLIP             
         if fmri == 1
             while GetSecs<TimeStimOffset+1.8
                 % listen to button presses      
@@ -118,19 +117,18 @@ end
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
                     % Save responses 
-                    keycodes = [keycodes; key];
+                    keycodes = [keycodes, key];
+                    reaction_time = timestamp - TimeStimOnset;
+                    RT = [RT; reaction_time];
                     response_times = [response_times; timestamp];
-                    RT = [RT; timestamp-TimeStimOnset];
-%                     times_pressed = [times_pressed; timestamp];
                 end
             end 
-%             keycodes = keys_pressed;
         else
             WaitSecs(1.8);
             % Now record response
             [keycodes, response_times] = KbQueueDump(p);
+            RT = response_times - TimeStimOnset;
             key_pressed = KbName(keycodes); if strcmp(key_pressed, 'q'), abort = 1; end
-            RT = response_times-TimeStimOnset;
         end
    end
 
@@ -850,16 +848,16 @@ end
                         'mas também qual a imagem que aparece a indicar que tem de tomar uma decisão.\n\n'...
                         'Essa imagem pode ser um carro ou uma casa.\n\n'...
                         'Terá de responder de acordo com a regra que será mostrada a seguir.\n\n'...
-                        'Use o botão da esquerda para resposta à esquerda com a mão esquerda.\n'...
-                        'Use o botão da direita para resposta à direita com a mão direita.\n\n'...
+                        'Use o botão da esquerda para resposta à esquerda com o indicador esquerdo.\n'...
+                        'Use o botão da direita para resposta à direita com o indicador direito.\n\n'...
                         'Carregue numa tecla para avançar.\n'];
         else     
             text = ['In this session, responses will take into account not only which cloud is active,\n '...
                         'but also which image appears indicating that you have to make a decision.\n\n' ...
                         'This image can be a car or a house.\n\n' ...
                         'You will have to answer according to the rule that will be shown next.\n\n' ...
-                        'Use the left button with your left hand for left answers.\n' ...
-                        'Use the right button with your right hand for right answers. \n\n' ...
+                        'Use the left button with your left index finger for left answers.\n' ...
+                        'Use the right button with your right index finger for right answers. \n\n' ...
                         'Press any button to continue. \n'];
         end
 
