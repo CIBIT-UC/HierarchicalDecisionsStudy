@@ -318,12 +318,7 @@ p.subject = subject;
                     p = Log(p, stim_id, 'NO_RESPONSE', NaN);
                 end
                 p = Log(p, stim_id, 'CHOICE_TRIAL_ACCURACY', correct);
-                if fmri == 0
-                   firstkey = KbName(keycodes(1));
-                else
-                   firstkey = keycodes(1);
-                end
-                p = Log(p, length(keycodes), 'NUMBER_OF_RESPONSES', firstkey);
+                p = Log(p, length(keycodes), 'NUMBER_OF_RESPONSES', );
                 fprintf('ACCURACY: %i, ', correct);  
                 if correct == 1
                     outcomes = [outcomes 1]; %#ok<AGROW>
