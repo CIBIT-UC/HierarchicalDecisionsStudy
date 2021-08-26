@@ -1,21 +1,24 @@
-function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchical_decision, coloured_task)
+function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchical_decision, coloured_task, language)
 % subject = subject code (string)
 % session = session number: 1 and 2 outside scanner; 3 and 4 inside scanner
 % run = up to 5 runs per session - ~10min per run
 % rule_hierarchical_decision = 0 or 1
 % coloured_task = 0 (grey samples) or 1 (coloured samples according to source)
+% language = 'PT' or 'EN'
 % press 'q' on choice trials to quit
-NoEyelink = 1; %is Eyelink wanted?
-debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
+NoEyelink = 0; %is Eyelink wanted?
+debug   = 1; % debug mode => 1: transparent window enabling viewing the background.
 small_window = 0; % Open a small window only
+% close ports - scanner
+IOPort('CloseAll');
 
 %% >>>>> Set up a lot of stuff
 % Load stimulus sequence
 load_dir = [pwd '\exp_data' filesep subject];
-load([load_dir filesep 'task_sequences']);
+task_sequences=load([load_dir filesep 'task_sequences']);
 
 if subject > 0
-    sequence = task_sequences{session}{run};
+    sequence = task_sequences.task_sequences{session}{run};
     fmri = sequence.fmri; % if false skip waiting for pulses.
 end
 
@@ -24,29 +27,34 @@ commandwindow; %focus on the command window, so that output is not written on th
 % clear mex global functions;%clear all before we start.
 
 GetSecs;
-WaitSecs(0.001);
+WaitSecs(0.001); 
 
 el        = []; % eye-tracker variable
 p         = []; % parameter structure that contains all info about the experiment.
+
+% -- EYETRACKING
+% Do you want to use the Eyelink eyetracking in dummymode (1) or not (2) ?
+p.ET_dummymode = menu('Do you want to use the Eyelink eyetracking in dummymode?', 'Yes', 'No');
+if p.ET_dummymode==2, p.ET_dummymode = 0; end
 
 SetParams;%set parameters of the experiment
 SetPTB;%set visualization parameters.
 
 
 % check how many choice stimulus of each type for this run
-number_face_stim = length(find(sequence.stim == 0));
+number_car_stim = length(find(sequence.stim == 0));
 number_house_stim = length(find(sequence.stim == 1));
-Files = dir(fullfile([p.images_dir '\selected_faces_adults_similar_lum'],'*.jpg'));
-file_order_faces = randperm(size(Files, 1)); 
-p.choice_trials.file_order_faces = file_order_faces(1:number_face_stim);
-for numb_files=1:number_face_stim
-    p.choice_trials.file_names_faces{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_faces(numb_files)).name);
+Files = dir(fullfile([p.images_dir '\selected_cars_similar_lum'],'*.jpg'));
+file_order_cars = randperm(size(Files, 1)); 
+p.choice_trials.file_order_cars = file_order_cars(1:number_car_stim);
+for numb_files=1:number_car_stim
+    p.choice_trials.file_names_cars{numb_files, 1} = fullfile(Files(file_order_cars(numb_files)).folder, Files(file_order_cars(numb_files)).name);
 end
-Files = dir(fullfile([p.images_dir '\selected_houses_similar_lum'] ,'*.jpg'));
+Files = dir(fullfile([p.images_dir '\selected_houses_similar_lum2cars'] ,'*.jpg'));
 file_order_houses = randperm(size(Files, 1));
 p.choice_trials.file_order_houses = file_order_houses(1:number_house_stim);
 for numb_files=1:number_house_stim
-    p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_houses(numb_files)).name);
+    p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_cars(numb_files)).folder, Files(file_order_houses(numb_files)).name);
 end
 
 p.rule_hierarchical_decision = rule_hierarchical_decision; % to counterbalance across participants which rule in first run, can be 0 or 1
@@ -65,13 +73,42 @@ p.subject = subject;
         if fmri == 0
             KbQueueStop(p.ptb.device);
             KbQueueRelease(p.ptb.device);
+            KbQueueCreate(p.ptb.device);
+            if strcmp(language, 'PT')
+                text = ['Durante a tarefa, mantenha o olhar fixo no alvo de fixação,\n'...
+                    'mantenha a cabeça fixa no apoio e não fale.\n\n'...
+                    'Use a tecla Z para resposta à esquerda com o indicador esquerdo.\n'...
+                    'Use a tecla M para resposta à direita com o indicador direito.\n\n'...
+                    'Carregue numa tecla para avançar.\n'];
+            else
+                 text = ['During the task, keep your eyes fixed on the fixation target,\n' ...
+                    'keep your head fixed on the support and do not speak.\n\n' ...
+                    'Use the Z key to answer left with your left index finger.\n' ...
+                    'Use the M key to answer right with your right index finger.\n\n' ...
+                    'Press any key to continue.\n'];
+            end
         else
+            p.LuminaHandle = IOPort('OpenSerialPort','COM4'); 
             IOPort('Flush',p.LuminaHandle); 
+            % to listen to keyboard as well
+            KbQueueStop(p.ptb.device);
+            KbQueueRelease(p.ptb.device);
+            KbQueueCreate(p.ptb.device);
+            if strcmp(language, 'PT')
+                text = ['Durante a tarefa, mantenha o olhar fixo no alvo de fixação,\n'...
+                    'não mexa a cabeça e não fale.\n\n'...
+                    'Use o botão da esquerda para resposta à esquerda.\n'...
+                    'Use o botão da direita para resposta à direita.\n\n'...
+                    'Carregue num botão para avançar.\n'];
+            else
+                text = ['During the task, keep your eyes fixed on the fixation target, \ n' ...
+                    'do not move your head or speak.\n\n' ...
+                    'Use the left button for the left answer. \ N' ...
+                    'Use the right button for the right answer. \ N \ n' ...
+                    'Press any button to continue. \ N'];
+            end
         end
 
-        text = ['Durante a tarefa, mantenha o olhar fixo na figura central,\n'...
-                'mantenha a cabeça fixa no apoio e não fale.\n\n'...
-                'Carregue numa tecla para avançar.\n'];
         DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
         Screen('Flip', p.ptb.w);
         if fmri == 0
@@ -81,16 +118,13 @@ p.subject = subject;
             IOPort('Read',p.LuminaHandle, 1, 1); %IOPort(‘Read’, handle [, blocking=0] [, amount]);
             pr = 1;
             while pr
-                key = IOPort('Read',response_box_handle);
+                key = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key) %&& (length(key) == 1)
                     pr = 0;
                 end
-                IOPort('Flush',response_box_handle);
+                IOPort('Flush',p.LuminaHandle);
             end
         end
-                        
-        p = InitEyeLink(p);
-        CalibrateEL;
         
         rule_explained(p, rule_hierarchical_decision) % show image with rule
         if fmri == 0
@@ -99,23 +133,27 @@ p.subject = subject;
         else
             pr = 1;
             while pr
-                key = IOPort('Read',response_box_handle);
+                key = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key) %&& (length(key) == 1)
                     pr = 0;
                 end
-                IOPort('Flush',response_box_handle);
+                IOPort('Flush',p.LuminaHandle);
             end
         end
         
+        % start eye tracker
+        p = InitEyeLink(p);
+        CalibrateEL;
+        
          if p.syncboxEnabled %Catarina defined waiting MRI 
             Screen('FillRect', p.ptb.w, p.stim.bg );
-            DrawFormattedText(p.ptb.w, 'Waiting MRI to start...', 'center', 'center', p.stim.white,[],[],[],2,[]);
+            DrawFormattedText(p.ptb.w, 'Waiting for MRI to start...', 'center', 'center', p.stim.white,[],[],[],2,[]);
             Screen('Flip',p.ptb.w);
 
-            SynchBox = IOPort('OpenSerialPort', 'COM2', 'BaudRate=57600 DataBits=8 Parity=None StopBits=1 FlowControl=None');
+            SynchBox = IOPort('OpenSerialPort', 'COM5', 'BaudRate=57600 DataBits=8 Parity=None StopBits=1 FlowControl=None');
             IOPort('Flush',SynchBox);
             [TriggerReceived, StartTime]=waitForTrigger(SynchBox,1,1000); %
-
+            p.MRItrigger_time = [StartTime, GetSecs];
             if ~ TriggerReceived
                 disp('Did not receive trigger - aborting stim');
                 sca; return
@@ -125,27 +163,30 @@ p.subject = subject;
         draw_fix(p); %Screen('Flip',p.ptb.w);  
         %WaitSecs(12); % baseline?
         [p, outcomes] = GlazeBlock(p,coloured_task);
+        WaitSecs(10);
+        fprintf('\n This block of trials lasted %3.2fs\n', GetSecs()-p.start_trials);
+        % Need to show feedback here!
+        p.sum_outcomes = sum(outcomes);
+        p.accuracy_rate = p.sum_outcomes/length(outcomes);
+        p = save_data(p);
+        if strcmp(language, 'PT')
+            text = sprintf('Nesta sessão acertou %2.0f%% das respostas.\n', 100*p.accuracy_rate);
+        else
+            text = sprintf('In this session, your answers were %2.0f%% correct.\n', 100*p.accuracy_rate);
+        end
+        Screen('FillRect', p.ptb.w, p.stim.bg);
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip',p.ptb.w);
+        KbWait(p.ptb.device, 2, GetSecs()+15);
         
     end
     p = dump_keys(p);
-    WaitSecs(10);
-    fprintf('\n This block of trials lasted %3.2fs\n', GetSecs()-p.start_trials);
 
-    % Need to show feedback here!
-    p.sum_outcomes = sum(outcomes);
-    p.accuracy_rate = p.sum_outcomes/length(outcomes);
-    text = sprintf('No último bloco acertou %2.0f%% das respostas.\n', 100*p.accuracy_rate);
-    Screen('FillRect', p.ptb.w, p.stim.bg);
-    DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-    Screen('Flip',p.ptb.w);
-    KbWait(p.ptb.device, 2, GetSecs()+15);
-    p = save_data(p);
     %stop the queue
     if fmri == 0
         KbQueueStop(p.ptb.device);
         KbQueueRelease(p.ptb.device);
     end
-
     cleanup(p);
     % lasterr
 
@@ -156,7 +197,7 @@ p.subject = subject;
     function [p, outcomes] = GlazeBlock(p, coloured_task)
         % 4.8 Check data save
 %         abort=false;
-        p.start_time = datestr(now, 'dd-mmm-yyTHHMM'); %p.start_time = datestr(now, 'dd-mmm-yy-HH:MM:SS');
+        p.start_time_task = datestr(now, 'dd-mmm-yyTHHMM'); %p.start_time = datestr(now, 'dd-mmm-yy-HH:MM:SS');
 
         Screen('FillRect',p.ptb.w,p.stim.bg);
         Screen('Flip',p.ptb.w);
@@ -177,8 +218,7 @@ p.subject = subject;
         Eyelink('Message', ['SUBJECT ', p.subject]);
         p = Log(p, GetSecs, 'START_GLAZE', nan);
         p = Log(p, GetSecs, 'SUBJECT', p.subject);
-        
-        
+          
         draw_fix(p);
         WaitSecs(1);
 
@@ -187,13 +227,13 @@ p.subject = subject;
         p.start_trials = GetSecs();
 %         start = start_trials+0.4;
         ActSampleOnset = GetSecs;
-        count_faces = 0; count_houses = 0; % to determine which image to show
+        count_cars = 0; count_houses = 0; % to determine which image to show
         for trial  = 1:size(p.sequence.stim, 2)
             %Get the variables that Trial function needs.
-            stim_id       = p.sequence.stim(trial);
-            type          = p.sequence.type(trial);
-            location      = p.sequence.sample(trial);
-            gener_side    = p.sequence.generating_side(trial);
+            stim_id       = p.sequence.stim(trial); % nan = sample trial; car - stim_id = 0; house - stim_id = 1 
+            type          = p.sequence.type(trial); % 0 = sample trial; 1 = choice trial
+            location      = p.sequence.sample(trial); % location negative = up; location positive = down
+            gener_side    = p.sequence.generating_side(trial);% negative = upper source; positive = lower source
 %             OnsetTime     = start+p.sequence.stimulus_onset(trial);
             OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
 %             if location < 0
@@ -225,55 +265,65 @@ p.subject = subject;
             elseif type == 1
                 % Choice trial.
                 if stim_id == 0
-                    count_faces = count_faces+1;
-                    theImageLocation = p.choice_trials.file_names_faces{count_faces};
+                    count_cars = count_cars+1;
+                    theImageLocation = p.choice_trials.file_names_cars{count_cars};
                 elseif stim_id == 1
                     count_houses = count_houses+1;
                     theImageLocation = p.choice_trials.file_names_houses{count_houses};
                 end
                 fprintf('\nCHOICE TRIAL; stim_id:%i, gener_side:%02.2f ', stim_id, gener_side>0);
-                [p, ~, keycodes, response_times, abort] = choice_trial(p, OnsetTime, stim_id, theImageLocation);
+                [p, RT, keycodes, response_times, abort] = choice_trial(p, OnsetTime, stim_id, theImageLocation);
                 if abort==1, return, end
                 % analysis accuracy of responses
                 correct = 0;
                 if ~isnan(keycodes)
                     for iii = 1:length(keycodes)
-                        RT = response_times(iii);
-                        keys = KbName(keycodes(iii));
-                        p = Log(p, RT, 'BUTTON_PRESS', keys); % save info for all responses so we know if it was corrected
+                        ReactionTime = RT(iii);
+                        if fmri == 0
+                           keys = KbName(keycodes(iii));
+                        else
+                           keys = num2str(keycodes(iii));
+                        end
+                        p = Log(p, ReactionTime, 'BUTTON_PRESS', keys); % save info for all responses so we know if it was corrected
+                        % in scanner left responses = 49 or 50; right responses 51 or 52
                         if iii == length(keycodes) % what counts for accuracy is last response
-                            if gener_side > 0 && stim_id == 0 % bottom and faces
-                                if p.rule_hierarchical_decision == 0 && strcmp(keys, 'm')
+                            if gener_side > 0 && stim_id == 0 % bottom and cars
+                                if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
                                     correct = correct+1;
-                                elseif p.rule_hierarchical_decision == 1 && strcmp(keys, 'z')
+                                elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
                                     correct = correct+1;
                                 end
                             elseif gener_side >0 && stim_id ==1 % bottom and houses 
-                                if p.rule_hierarchical_decision == 0 && strcmp(keys, 'z')
+                                if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
                                     correct = correct+1;
-                                elseif p.rule_hierarchical_decision == 1 && strcmp(keys, 'm')
+                                elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
                                     correct = correct+1;
                                 end
-                            elseif gener_side <0 && stim_id ==0 % top and faces
-                                if p.rule_hierarchical_decision == 0 && strcmp(keys, 'z')
+                            elseif gener_side <0 && stim_id == 0 % top and faces
+                                if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
                                     correct = correct+1;
-                                elseif p.rule_hierarchical_decision == 1 && strcmp(keys, 'm')
+                                elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
                                     correct = correct+1;
                                 end
                             elseif gener_side < 0 && stim_id == 1 % top and houses
-                                if p.rule_hierarchical_decision == 0 && strcmp(keys, 'm')
+                                if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
                                     correct = correct+1;
-                                elseif p.rule_hierarchical_decision == 1 && strcmp(keys, 'z')
+                                elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
                                     correct = correct+1;
                                 end
                             end
                         end
-
                     end
                 else
                     p = Log(p, stim_id, 'NO_RESPONSE', NaN);
                 end
                 p = Log(p, stim_id, 'CHOICE_TRIAL_ACCURACY', correct);
+                if fmri == 0
+                   firstkey = KbName(keycodes(1));
+                else
+                   firstkey = keycodes(1);
+                end
+                p = Log(p, length(keycodes), 'NUMBER_OF_RESPONSES', firstkey);
                 fprintf('ACCURACY: %i, ', correct);  
                 if correct == 1
                     outcomes = [outcomes 1]; %#ok<AGROW>
@@ -294,22 +344,17 @@ p.subject = subject;
     %  -----------------------------------
 
     function [p, RT, keycodes, response_times, abort] = choice_trial(p, ChoiceStimOnset, stim_id, theImageLocation)
-%         rule = nan;
-        response = nan; %#ok<NASGU>
-        RT = nan; %#ok<NASGU>
+
         abort = 0;
-        
-        % load image of face or house - face - stim_id = 0; house - stim_id = 1 
+        % load image of car or house - car - stim_id = 0; house - stim_id = 1 
         % Here we load in an image from file.
         theImage = imread(theImageLocation);
         %    Make the image into a texture
         imageTexture = Screen('MakeTexture', p.ptb.w, theImage);
         % Draw the gaussian apertures  into our full screen aperture mask
         Screen('DrawTextures', p.gaussian_aperture.fullWindowMask, p.gaussian_aperture.masktex, [], p.gaussian_aperture.dstRects);
-
         % Draw the image to the screen
-        % left, top, right, bottom - size of image in pixels [0,0] = top left
-        % corner
+        % left, top, right, bottom - size of image in pixels [0,0] = top left corner
         NewImageRect = [0 0 300 300];
         NewImageRect_centered = CenterRectOnPointd(NewImageRect, p.ptb.width / 2, p.ptb.height / 2);
         Screen('DrawTexture', p.ptb.w, imageTexture, [], NewImageRect_centered, 0);
@@ -320,16 +365,19 @@ p.subject = subject;
             p = dump_keys(p);
             KbQueueFlush(p.ptb.device);        
         elseif fmri == 1   
-            IOPort('Flush',p.LuminaHandle); %cat% 
+            IOPort('Flush',p.LuminaHandle);
         end
         
         % Flip to the screen
         % STIMULUS ONSET
         TimeStimOnset  = Screen('Flip', p.ptb.w, ChoiceStimOnset, 0);    
-        start_rt_counter  = TimeStimOnset;
+%         start_rt_counter  = TimeStimOnset;
         p = Log(p,TimeStimOnset, 'CHOICE_TRIAL_ONSET', stim_id);
         Eyelink('Message', sprintf('CHOICE_TRIAL_ONSET %i', stim_id));
         draw_fix(p);
+
+        % record responses
+        keycodes = []; RT = []; response_times = [];
         if fmri == 1
             while GetSecs<TimeStimOnset+ 0.2-p.ptb.slack
                 % listen to button presses      
@@ -337,13 +385,15 @@ p.subject = subject;
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
                     % Save responses 
-                    keys_pressed = [keys_pressed; key];
-                    times_pressed = [times_pressed; timestamp];
+                    keycodes = [keycodes, key];
+                    reaction_time = timestamp - TimeStimOnset;
+                    RT = [RT; reaction_time];
+                    response_times = [response_times; timestamp];
                 end
             end
         end
         
-        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+ 0.2 -p.ptb.slack, 0);  %<----- FLIP                    
+        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+.2 -p.ptb.slack, 0);  %<----- FLIP             
         p = Log(p,TimeStimOffset, 'CHOICE_TRIAL_STIMOFF', nan);
         Eyelink('Message', 'CHOICE_TRIAL_STIMOFF');
         if fmri == 1
@@ -352,16 +402,18 @@ p.subject = subject;
                 [key,timestamp,~] = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key)
                     IOPort('Flush',p.LuminaHandle);
-                    % record responses 
-                    keys_pressed = [keys_pressed; key];
-                    times_pressed = [times_pressed; timestamp];
+                    % Save responses 
+                    keycodes = [keycodes, key];
+                    reaction_time = timestamp - TimeStimOnset;
+                    RT = [RT; reaction_time];
+                    response_times = [response_times; timestamp];
                 end
             end 
         else
             WaitSecs(1.8);
             % Now record response
-            keycodes = nan; response_times = nan;
             [keycodes, response_times] = KbQueueDump(p);
+            RT = response_times - TimeStimOnset;
             key_pressed = KbName(keycodes); if strcmp(key_pressed, 'q'), abort = 1; end
         end
     end
@@ -382,11 +434,11 @@ p.subject = subject;
         location = location*p.display.ppd; % location negative = up; location positive = down
         rin = [cx-r_inner, location-r_inner+cy, cx+r_inner, location+r_inner+cy];
         rout = [cx-r_outer, location-r_outer+cy, cx+r_outer, location+r_outer+cy];
-        draw_fix(p);            
+        draw_fix(p);
             
         if coloured_task == 1
-            % sample generated by left source coloured blue
-            % sample generated by right cource coloured orange
+            % sample generated by lower source coloured blue
+            % sample generated by upper source coloured orange
             if gener_side<0
                 colour=[0 70 0]; %green
             else
@@ -399,20 +451,11 @@ p.subject = subject;
         Screen('FillOval', p.ptb.w, colour+o, rin);
 
         ActSampleOnset  = Screen('Flip',p.ptb.w, SampleOnset, 0);      %<----- FLIP
-        if gener_side<0 % Maria to make analyses easier
-            Eyelink('message', sprintf('sample_neg %f', location));
-            p = Log(p,ActSampleOnset, 'SAMPLE_ONSET_NEG', location);
-            Eyelink('message', sprintf('sample_pos %f', location));
-            p = Log(p,ActSampleOnset, 'SAMPLE_ONSET_POS', location);
-        end
-%         Eyelink('message', sprintf('sample %f', location)); 
-%         p = Log(p,ActSampleOnset, 'SAMPLE_ONSET', location, p.phase_variable, p.block);
-        %MarkCED( p.com.lpt.address, p.com.lpt.event);
+        Eyelink('message', sprintf('sample_onset %f', location));
+        p = Log(p,ActSampleOnset, 'SAMPLE_ONSET', location);
         draw_fix(p);
-
-        TimeSampleOffset = Screen('Flip',p.ptb.w,ActSampleOnset+p.sample_duration, 0);     %<----- FLIP
+        TimeSampleOffset = Screen('Flip',p.ptb.w, ActSampleOnset+p.sample_duration, 0);     %<----- FLIP
         draw_fix(p);
-        %TimeSampleOffset = Screen('Flip',p.ptb.w,TimeSampleOffset+(.25), 0);
     end
 
 
@@ -436,7 +479,7 @@ p.subject = subject;
         colorCross = p.stim.bg; % color of the Cross [R G B]
 
         d1 = 0.6; % diameter of outer circle (degrees)
-        d2 = 0.2; % diameter of inner circle (degrees)
+        d2 = 0.14; % 0.2; % diameter of inner circle (degrees)
 
         Screen('FillOval', p.ptb.w, colorOval, [p.ptb.CrossPosition_x-d1/2 * p.display.ppd, p.ptb.CrossPosition_y-d1/2 * p.display.ppd, p.ptb.CrossPosition_x+d1/2 * p.display.ppd, p.ptb.CrossPosition_y+d1/2 * p.display.ppd], d1 * p.display.ppd);
         Screen('DrawLine', p.ptb.w, colorCross, p.ptb.CrossPosition_x-d1/2 * p.display.ppd, p.ptb.CrossPosition_y, p.ptb.CrossPosition_x+d1/2 * p.display.ppd, p.ptb.CrossPosition_y, d2 * p.display.ppd);
@@ -484,11 +527,12 @@ p.subject = subject;
 %             p.display.resolution = [1680 1050];
             p.display.dimension = [47 29.5];
             p.display.distance = [52, 64]; 
-            p.path.baselocation = ['N:\ProjectBrainstemAgeing\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
+            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
+            p.stim.lumdiff = 12; % luminance difference within sample fill and outline
             % dir with face or house images files
-%             face_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_faces_adults_similar_lum'];
+%             car_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum'];
 %             house_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum'];
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
         elseif strcmp(p.hostname, 'cnd0151937') % laptop hp elitebook
@@ -498,18 +542,27 @@ p.subject = subject;
             p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
+            p.stim.lumdiff = 12; % luminance difference within sample fill and outline
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
-        elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF')        % Coimbra lab 94  = ['DESKTOP-MKKOQUF']
+        elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94  = ['DESKTOP-MKKOQUF']
 %             p.display.resolution = [1600 900]; %[1440 1080]; %[1920 1080]; Maria set to laptop 14Sep2019
             p.display.dimension = [34.5 19.5]; %[52, 39.5]; %[52, 29.5]; Maria set to laptop 14Sep2019
             p.display.distance = [52, 50]; %[62, 59]; % 
-            p.path.baselocation           = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\faces_vs_houses_lab94\data';
+            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg = [48 48 48];%[128, 128, 128];
-            p.stim.fix_target = [64 64 64]; 
+            p.stim.fix_target = [64 64 64];
+            p.stim.lumdiff = 12; % luminance difference within sample fill and outline
             % dir with face or house images files
-%             face_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_faces_adults_similar_lum';
-%             house_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum';
-            p.images_dir = 'C:\Users\admin\Desktop\MariaRibeiro\GlazeTask\Stanford Vision & Perception Neuroscience Lab';
+            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab']; 
+        elseif  strcmp(p.hostname, 'DESKTOP-TKTCOK0') % MRI SCANNER - CHECK CODE
+            p.display.dimension = [87.8 48.5];
+            p.display.distance = [175, 182.5];
+            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
+            p.stim.bg  = [92 92 92];
+            p.stim.fix_target = [105 105 105]; 
+            p.stim.lumdiff = 10; % luminance difference within sample fill and outline
+            % dir with car and house image files
+            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab']; 
         else % other displays
 %             p.display.resolution = [1600 900]; %[1440 1080]; %[1920 1080]; Maria set to laptop 14Sep2019
             p.display.dimension = [34.5 19.5];
@@ -517,14 +570,12 @@ p.subject = subject;
             p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
+            p.stim.lumdiff = 12; % luminance difference within sample fill and outline
             % dir with face or house images files
-%             face_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_faces_adults_similar_lum'];
-%             house_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum'];
             p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];        
         end
 
         p.stim.r_inner = .1;
-        p.stim.lumdiff = 12; % luminance difference within sample fill and outline
         p.stim.sample_duration = .1;
         %create the base folder if not yet there.
         if exist(p.path.baselocation) == 0 %#ok<EXIST>
@@ -546,7 +597,6 @@ p.subject = subject;
             case 0
                 p.responseDevice = 'keyboard';
                 p.syncboxEnabled = 0;
-                KbName('UnifyKeyNames');
 %                 Screen('FillRect', p.ptb.w, p.stim.bg);
 %                 DrawFormattedText(p.ptb.w, 'Ready...', 'center', 'center', p.stim.white,[],[],[],2,[]);
 %                 Screen('Flip',p.ptb.w);
@@ -554,11 +604,11 @@ p.subject = subject;
             case 1
                 p.responseDevice = 'lumina';
                 p.syncboxEnabled=1;
-                p.LuminaHandle = IOPort('OpenSerialPort','COM3', 'ReadTimeout', 30);
-                IOPort('Flush',p.LuminaHandle);     
+%                 p.LuminaHandle = IOPort('OpenSerialPort','COM3', 'ReadTimeout', 30);
+%                 IOPort('Flush',p.LuminaHandle);     
         end
         
-        %% keys to be used during the experiment:
+        %% keys to be used during the experiment: - CHECK FOR MRI RESPONSE BOX - 
         %This part is highly specific for your system and recording setup,
         %please enter the correct key identifiers. You can get this information calling the
         %KbName function and replacing the code below for the key below.
@@ -568,7 +618,7 @@ p.subject = subject;
         %4, 9 ==> Up (confirm)
         %5    ==> Pulse from the scanner
 
-%         KbName('UnifyKeyNames');
+        KbName('UnifyKeyNames');
         p.keys.confirm                 = '4$';%
 %         p.keys.answer_a                = {'1!', '2@', '3#', '4$'};
 %         p.keys.answer_a_train          = 'z';
@@ -615,40 +665,10 @@ p.subject = subject;
         Screen('Preference', 'DefaultFontName', p.text.fontname);
         Screen('Preference', 'TextAntiAliasing',2);%enable textantialiasing high quality
         Screen('Preference', 'VisualDebuglevel', 0);
-        Screen('Preference', 'SkipSyncTests', 1);
         Screen('Preference', 'SuppressAllWarnings', 1);
+        
         %%Find the number of the screen to be opened
         screens                     =  Screen('Screens');
-%         if strcmp(p.hostname, 'larry.local')
-%             p.ptb.screenNumber          =  min(screens);%the maximum is the second monitor
-%             [idx, names, ~] = GetKeyboardIndices;
-%             p.ptb.device = nan;
-%             for iii = 1:length(idx)
-%                 if strcmp(names{iii}, '')
-%                     p.ptb.device = idx(iii);
-%                     break
-%                 elseif strcmp(names{iii}, 'Apple Internal Keyboard / Trackpad') && isnan(p.ptb.device)
-%                     p.ptb.device = idx(iii);
-%                     break
-%                 end
-%             end
-%             fprintf('Device name is: %s\n', names{iii})
-%             gamma = load('dell241i_calibration.mat');
-%             p.ptb.gamma = gamma.gTmp;
-%         elseif strcmp(p.hostname, 'donnerlab-Precision-T1700')
-%             p.ptb.screenNumber          =  0;
-%             [idx, names, ~] = GetKeyboardIndices;
-%             p.ptb.device = nan;
-%             for iii = 1:length(idx)
-%                 if strcmp(names{iii}, 'DELL Dell USB Entry Keyboard')
-%                     p.ptb.device = idx(iii);
-%                     break
-%                 end
-%             end
-%             p.ptb.device
-%             gamma = load('vpixx_gamma_table.mat');
-%             p.ptb.gamma = gamma.table;
-%         else
         p.ptb.screenNumber   = max(screens);%the maximum is the second monitor
         [idx, names, ~] = GetKeyboardIndices;
         p.ptb.device = idx;
@@ -714,7 +734,7 @@ p.subject = subject;
         for i = fields(p.keys)'
             p.ptb.keysOfInterest = [p.ptb.keysOfInterest KbName(p.keys.(i{1}))];
         end
-        RestrictKeysForKbCheck(p.ptb.keysOfInterest);
+%         RestrictKeysForKbCheck(p.ptb.keysOfInterest);
         KbQueueCreate(p.ptb.device);%, p.ptb.keysOfInterest);%default device.
      
         Screen('TextSize', p.ptb.w,  20);
@@ -752,22 +772,37 @@ p.subject = subject;
             p.gaussian_aperture.dstRects(:, i) = CenterRectOnPointd([0 0 size(mask, 1), size(mask, 2)], xg(i), yg(i));
         end
         
+        % Trick suggested by the PTB authors to avoid synchronization/calibration
+        % problems
+        figure(1)
+        plot(sin(0:0.1:3.14));
+        % Close figure with sin plot (PTB authors trick for synchronization)
+        close Figure 1
+        
     end
 
 
     function p=InitEyeLink(p)
-        %
-        if EyelinkInit(NoEyelink)%use 0 to init normaly
-            fprintf('=================\nEyelink initialized correctly...\n')
-        else
-            fprintf('=================\nThere is problem in Eyelink initialization\n')
-            keyboard;
+        % Initialization of the connection with the Eyelink Gazetracker
+        % if we are not in dummy mode
+        if ~EyelinkInit(p.ET_dummymode, 1)
+            fprintf('Eyelink Init aborted.\n');
+            cleanup;  % cleanup function
+            return
         end
+%         if EyelinkInit(NoEyelink)%use 0 to init normaly
+%             fprintf('=================\nEyelink initialized correctly...\n')
+%         else
+%             fprintf('=================\nThere is problem in Eyelink initialization\n')
+%             keyboard;
+%         end
         %
         WaitSecs(0.5);
         [~, vs] = Eyelink('GetTrackerVersion');
         fprintf('=================\nRunning experiment on a ''%s'' tracker.\n', vs );
 
+
+        
         %
         el                          = EyelinkInitDefaults(p.ptb.w);
         %update the defaults of the eyelink tracker
@@ -800,7 +835,11 @@ p.subject = subject;
 %         end
         % name of edf file to be created with eye tracking data - max
         % number of characters = 8
-        p.edffile = [p.subject(3:end), 'S', num2str(p.session), 'R', num2str(p.run)]; %sprintf('S%d_B%d.edf', p.subject,  p.block); % Maria
+        if length(p.subject) < 7
+            p.edffile = [p.subject(3:end), 'S', num2str(p.session), 'R', num2str(p.run), '.edf']; %sprintf('S%d_B%d.edf', p.subject,  p.block); % Maria
+        else
+            p.edffile = ['S', num2str(p.session), 'R', num2str(p.run), '.edf'];
+        end     
         res = Eyelink('Openfile', p.edffile); %#ok<NASGU>
 
         Eyelink('command', 'screen_pixel_coords = %ld %ld %ld %ld', 0, 0, p.ptb.width-1, p.ptb.height-1);
@@ -827,7 +866,8 @@ p.subject = subject;
         Eyelink('command', 'file_event_filter = LEFT,RIGHT,FIXATION,SACCADE,BLINK,MESSAGE,BUTTON,INPUT');
         Eyelink('command', 'use_ellipse_fitter = no');
         % set sample rate in camera setup screen
-        Eyelink('command', 'sample_rate = %d',1000);
+%         Eyelink('command', 'sample_rate = %d',1000);
+        Eyelink('command', 'sample_rate = %d',500);
 
     end
 
@@ -892,7 +932,7 @@ p.subject = subject;
     function p = Log(p, ptb_time, event_type, event_info)
         for iii = 1:length(ptb_time)
             p.out.event_count                = p.out.event_count + 1;
-            p.out.log{p.out.event_count}   = {ptb_time(iii) event_type event_info(iii)};
+           p.out.log{p.out.event_count}   = {ptb_time(iii) event_type event_info(iii)};
             %fprintf('LOG: %2.2f, %i, %s, %s, %i \n', ptb_time, event_type, event_info, phase_variable, block)
         end
 
@@ -935,7 +975,13 @@ p.subject = subject;
         p.save_time = datestr(now, 'yyyymmddTHHMMSS');
         rst = randstr(5);
         p.random_string = rst;
-        path_edf = fullfile(p.path.baselocation, sprintf(p.subject,  p.block));
+        if length(p.subject) < 7
+            p.edffile = [p.subject(3:end), 'S', num2str(p.session), 'R', num2str(p.run)]; %sprintf('S%d_B%d.edf', p.subject,  p.block); % Maria
+        else
+            p.edffile = ['S', num2str(p.session), 'R', num2str(p.run)];
+        end 
+%         path_edf = fullfile(p.path.baselocation, sprintf(p.subject,  p.block));
+        path_edf = fullfile(p.path.baselocation, p.edffile);
         path_data = [p.path.baselocation, filesep p.subject, rst];
         %get the eyelink file back to this computer
         StopEyelink(p.edffile,   path_edf);
@@ -961,7 +1007,7 @@ p.subject = subject;
         ppd = 2 * o*x_px/width; %  number of points per degree
     end
 
-        function rule_explained(p, rule)
+    function rule_explained(p, rule)
 
         % 'center' = 0 - top: face-left, house-right; bottom house-left, face-right        
         % load image of face or house - face - stim_id = 0; house - stim_id = 1 
@@ -970,13 +1016,13 @@ p.subject = subject;
         img_size = 300;
         % Here we load in an image from file.
         % face image
-        theImageLocation = [p.images_dir '\child-3.jpg'];
-        theImage_face = imread(theImageLocation);
+        theImageLocation = [p.images_dir, '\car-27.jpg'];
+        theImage_car = imread(theImageLocation);
         % Make the image into a texture
-        imageTexture_face = Screen('MakeTexture', p.ptb.w, theImage_face);
+        imageTexture_car = Screen('MakeTexture', p.ptb.w, theImage_car);
 
         % House Image
-        theImageLocation = [p.images_dir '\house-3.jpg'];
+        theImageLocation = [p.images_dir, '\house-38.jpg'];
         theImage = imread(theImageLocation);
         % Make the image into a texture
         imageTexture_house = Screen('MakeTexture', p.ptb.w, theImage);
@@ -1023,22 +1069,93 @@ p.subject = subject;
         NewImage_Left_Bottom = [p.ptb.width/2-img_size, p.ptb.height/2, p.ptb.width/2, p.ptb.height/2+img_size];
 
         if rule == 0
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Left_Top, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Right_Bottom, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Top, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Bottom, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Right_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Bottom, 0);
+            if strcmp(language, 'PT')
+                text3 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de cima estiver ativa e aparecer.\n', ...
+                'uma casa, responda à direita,\n', ...
+                'se aparecer\n', ... 
+                'um carro, responda à esquerda.'];
+                text4 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de baixo estiver ativa e aparecer.\n', ...
+                'um carro, responda à direita,\n', ...
+                'se aparecer\n', ... 
+                'uma casa, responda à esquerda.'];
+            else
+                text3 = ['If just before the decision cue,\n', ...
+                    'the top cloud is active\n', ...
+                    'and the decision cue is\n', ...
+                    'a house, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a car, press the left button.'];
+                text4 = ['If just before the decision cue,\n', ...
+                    'the bottom cloud is active\n', ...
+                    'and the decision cue is\n', ...
+                    'a car, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a house, press the left button.'];
+            end
         else
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Right_Bottom, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Right_Top, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Left_Bottom, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Top, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Bottom, 0);
+            if strcmp(language, 'PT')
+                text3 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de cima estiver ativa e aparecer.\n', ...
+                    'um carro, responda à direita,\n', ...
+                    'se aparecer\n', ... 
+                    'uma casa, responda à esquerda.'];
+                text4 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de baixo estiver ativa e aparecer.\n', ...
+                    'uma casa, responda à direita,\n', ...
+                    'se aparecer\n', ... 
+                    'um carro, responda à esquerda.'];
+            else
+                text3 = ['If just before the decision cue,\n', ...
+                    'the top cloud is active\n', ...
+                    'and the decision cue is\n', .....
+                    'a car, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a house, press the left button.'];
+                text4 = ['If just before the decision cue,\n', ...
+                    'the bottom cloud is active\n', ...
+                    'and the decision cue is\n', ...
+                    'a house, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a car, press the left button.'];
+            end
+        
         end
        
         Screen('DrawTexture', p.ptb.w, fullWindowMask);
         draw_fix(p);
-        text = 'Carregue numa tecla para avançar.';
-        DrawFormattedText(p.ptb.w, text, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        %DrawFormattedText(win, tstring [, sx][, sy][, color][, wrapat][, flipHorizontal][, flipVertical][, vSpacing][, righttoleft][, winRect])
+
+        Screen('TextSize', p.ptb.w, 16);
+        DrawFormattedText(p.ptb.w, text3, .25*p.ptb.width/10, p.ptb.height/2-img_size*3/4, p.stim.white,[],[],[],2,[]);
+        DrawFormattedText(p.ptb.w, text4, .25*p.ptb.width/10, p.ptb.height/2+img_size/4, p.stim.white,[],[],[],2,[]);
+        
+        Screen('TextSize', p.ptb.w,  20);
+        if strcmp(language, 'PT')
+            text1 = 'Quando tiver a regra bem memorizada, carregue numa tecla para avançar.';
+            DrawFormattedText(p.ptb.w, text1, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+            text2 = 'Preste atenção e memorize esta regra.';
+            DrawFormattedText(p.ptb.w, text2, 'center', 1*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        else
+            text1 = 'Once you have learned the rule, press any key to continue.';
+            DrawFormattedText(p.ptb.w, text1, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+            text2 = 'Pay attention and memorize this rule.';
+            DrawFormattedText(p.ptb.w, text2, 'center', 1*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        end
+
+
         %% Flip to the screen
         Screen('Flip', p.ptb.w);
+
     end
+   
 end

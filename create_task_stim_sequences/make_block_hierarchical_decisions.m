@@ -2,7 +2,8 @@ function [seq, es] = make_block_hierarchical_decisions(block_length)
 duration_glaze = .4; % constant stimuli isi
 hazard_rate = 1/70; % hazard rate of distribution switches
 Q_rate = 1/35;
-sigma = 0.5; % std of gaussian distributions - degrees of visual angle
+% SNR = 2*threshold/sigma = 1.25
+sigma = 0.4; % std of gaussian distributions - degrees of visual angle
 threshold = 0.25; % position of mean of gaussians in relation to fixation cross in degrees of visual angle
               
 [seq, es] = make_glaze_sequence(hazard_rate, block_length, threshold, sigma, Q_rate, duration_glaze);

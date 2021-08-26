@@ -1,9 +1,10 @@
-function [p]=hierarchical_decisions_task_training(subject, rule_hierarchical_decision, start_phase)
+function [p]=hierarchical_decisions_task_training(subject, rule_hierarchical_decision, start_phase, language)
 % subject = string with subject ID
 % rule_hierarchical_decision = 0 or 1 - rule counterbalanced across
 % participants
 % start_phase = 1 - to run the whole training schedule
 % start_phase = 2 - to run only the second part with hierarchical decisions
+% language = 'PT or 'EN'
 % press 'q' at time of response to quit
 rng('shuffle'); % to be really random!
 % NoEyelink = 1; %is Eyelink wanted?
@@ -28,16 +29,21 @@ Screen('TextStyle', p.ptb.w, 1);
 %% >>>>>>> Experiment starts.
 
 % use two different sequences of stimuli:
-% easy - distance between means = 1 (threshold = 0.5) ; sd = 0.5; SNR = 2
-% difficult - distance between means = 0.5 (threshold = 0.25); sd = 0.5;
-% SNR = 1
+% easy - distance between means = 1 (threshold = 0.5) ; sd = 0.4; SNR = 2.5
+% difficult - distance between means = 0.5 (threshold = 0.25); sd = 0.4;
+% SNR = 1.25
 
 while 1
-    p.location_of_mean = [0.5, 0.25]; p.sd = [0.5, 0.5];
-
-    text = ['Por favor, desligue ou tire o som ao telemovel. \n'...
-        'Obrigada!\n\n', ...
-        'Quando estiver pronto, carregue numa tecla para começar.'];
+    p.location_of_mean = [0.5, 0.25]; p.sd = [0.4, 0.4];
+    if strcmp(language, 'PT')
+        text = ['Por favor, desligue ou tire o som ao telemóvel. \n'...
+            'Obrigada!\n\n', ...
+            'Carregue numa tecla para começar.'];
+    else
+        text = ['Please turn off or mute your phone.\n'...
+            'Thank you!\n\n', ...
+            'Press any key to start.'];
+    end
     DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
     Screen('Flip', p.ptb.w);
     [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
@@ -52,21 +58,37 @@ while 1
 
         % PHASE 2 - show samples from alternating
         % distributions with choice trials - coloured samples
-        text = ['A seguir vamos observar uma sequência de pontos gerados pelos dois conjuntos.\n', ... 
-            'As cores indicam quando as alternâncias ocorrem. \n'...
-            'Verde = conjunto superior. Azul = conjunto inferior.\n'...
-            'Preste atenção à posição dos pontos. \n\n'...
-            'Carregue numa tecla para avançar.'];
+        if strcmp(language, 'PT')
+            text = ['A seguir vamos observar uma sequência de pontos gerados pelas duas nuvens.\n', ... 
+                'As cores indicam quando as alternâncias ocorrem. \n'...
+                'Verde = nuvem superior. Azul = nuvem inferior.\n'...
+                'Preste atenção à posição dos pontos. \n\n'...
+                'Carregue numa tecla para avançar.'];
+        else
+            text = ['Next, we will observe a sequence of dots drawn from the two clouds. \n', ...
+            'The colours indicate when the alternations occur. \n '...
+            'Green = upper cloud. Blue = lower cloud. \n '...
+            'Pay attention to the position of the dots. \n\n '...
+            'Press any key to continue.'];   
+        end
+        
         DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
         Screen('Flip', p.ptb.w);
         [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
         key_pressed = KbName(keyCode);
-        text = ['Nos momentos assinalados pelo círculo amarelo terá de indicar que conjunto \n', ... 
-            'estava ativo imediatamente antes usando o teclado.\n\n'...
-            'Responda com a mão direita usando as setas esquerda e cima,\n'... 
-            'para indicar que conjunto estava ativo.\n\n'...
-            'Mantenha o olhar fixo na imagem central e observe os pontos com a visão periférica. \n\n', ...
-            'Carregue numa tecla para avançar.'];
+        if strcmp(language, 'PT')
+            text = ['Nos momentos assinalados pelo círculo amarelo, terá de indicar que nuvem \n', ... 
+                'estava ativa imediatamente antes, usando o teclado.\n\n'...
+                'Responda com a mão direita usando as setas esquerda e cima.\n\n'...
+                'Mantenha o olhar fixo no alvo de fixação e observe os pontos com a visão periférica. \n\n', ...
+                'Carregue numa tecla para avançar.'];
+        else
+            text = ['At the moments marked by the yellow circle, you will have to indicate which cloud\n', ...
+                'was active immediately before, using the keyboard.\n\n' ...
+                'Answer with your right hand using the left arrow and up arrow keys.\n\n' ...
+                'Keep your eyes fixed on the fixation target and observe the dots with your peripheral vision.\n\n', ...
+                'Press any key to continue.'];            
+        end
         DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
         Screen('Flip', p.ptb.w);
         [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
@@ -81,32 +103,54 @@ while 1
             Screen('Flip', p.ptb.w);
             % show samples from alternating distributions with choice trials
             if block ==1 % PHASE 3
-                text = ['Vamos observar uma sequência de pontos gerados alternadamente \n', ... 
-                    'pelos dois conjuntos. Desta vez os pontos têm todos a mesma cor. \n\n', ...
-                    'Terá de inferir quando houve mudança do conjunto gerador\n'... 
+                if strcmp(language, 'PT')
+                    text = ['A seguir vamos apresentar uma sequência de pontos gerados alternadamente \n', ... 
+                    'pelas duas nuvens. Desta vez os pontos têm todos a mesma cor. \n\n', ...
+                    'Terá de inferir quando houve mudança da nuvem ativa\n'... 
                     'através da análise das posições dos pontos. \n\n'...
                     'Carregue numa tecla para avançar.'];
+                else
+                   text = ['Next, we will show a sequence of dots alternately generated \n', ...
+                    'by the two clouds. This time the dots are all the same color. \n\n ', ...
+                    'You will have to infer when the active cloud has changed\n' ...
+                    'through the analysis of the positions of the dots.\n\n '...
+                    'Press any key to continue.'];
+                end
                 DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
                 Screen('Flip', p.ptb.w);
                 [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
                 key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
             elseif block ==2 % two distribution closer together - more difficult version of task - PHASE 4
-                text = ['Agora vamos fazer a tarefa mais difícil.\n'...
-                'A partir de agora os conjuntos que geram os pontos\n'... 
-                'vão estar mais sobrepostos.\n\n', ...
-                'Carregue numa tecla para avançar.'];
+                if strcmp(language, 'PT')
+                    text = ['Agora vamos tornar o teste mais difícil.\n'...
+                    'A partir de agora as nuvens que geram os pontos\n'... 
+                    'vão estar mais sobrepostas.\n\n', ...
+                    'Carregue numa tecla para avançar.'];
+                else
+                     text = ['Now, we will make the test more difficult. \n' ...
+                    'From now on the clouds that generate the dots \n' ...
+                    'will be more overlapping. \n\n', ...
+                    'Press any key to continue.'];                   
+                end
                 DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
                 Screen('Flip', p.ptb.w);
                 [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
                 key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
 
                 % show image with example of samples from both distributions
-                text = 'Dois conjuntos geradores de pontos.';
+                text = 'Duas nuvens geradoras de pontos.';
                 DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
                 text = 'Carregue numa tecla para avançar.';
                 DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
-                % Here we load in an image from file.
-                theImageLocation = [pwd, '\generative_processes_difficult_3.jpg'];
+                % Here we load an image from file.
+                if strcmp(p.hostname, 'czc0211hsd') %gab72
+                    theImageLocation = [pwd, '\generative_processes_easy_SNR_1_25_gab92.jpg'];
+                elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94 
+                    theImageLocation = [pwd, '\generative_processes_easy_SNR_1_25_lab94.jpg'];
+                else
+                    theImageLocation = [pwd, '\generative_processes_easy_SNR_1_25.jpg'];
+                end
+                
                 theImage_example = imread(theImageLocation);
                 % Make the image into a texture
                 imageTexture_example = Screen('MakeTexture', p.ptb.w, theImage_example);
@@ -116,12 +160,21 @@ while 1
                 key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end
             end  
 
-            text = ['Nos momentos assinalados pelo círculo amarelo terá de indicar que conjunto \n', ... 
-            'estava ativo imediatamente antes usando o teclado.\n\n'...
-            'Responda com a mão direita usando as setas esquerda e cima,\n'... 
-            'para indicar que conjunto estava ativo.\n\n'...
-            'Mantenha o olhar fixo na imagem central e observe os pontos com a visão periferica. \n\n', ...
-            'Carregue numa tecla para avançar.'];
+            if strcmp(language, 'PT')
+                text = ['Nos momentos assinalados pelo círculo amarelo terá de indicar que nuvem\n', ... 
+                'estava ativa imediatamente antes usando o teclado.\n\n'...
+                'Responda com a mão direita usando as setas esquerda e cima,\n'... 
+                'para indicar que nuvem estava ativa.\n\n'...
+                'Mantenha o olhar fixo no alvo de fixação e observe os pontos com a visão periferica. \n\n', ...
+                'Carregue numa tecla para avançar.'];
+            else
+                text = ['At the moments marked by the yellow circle you will have to indicate which cloud \ n', ...
+                'was active immediately before using the keyboard. \ n \ n' ...
+                'Answer with your right hand using the left and up arrows, \ n' ...
+                'to indicate which cloud was active. \ n \ n' ...
+                'Keep your eyes fixed on the target and observe the points with peripheral vision. \ n \ n ', ...
+                'Press a key to advance.'];
+            end
             DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
             Screen('Flip', p.ptb.w);
             [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
@@ -677,13 +730,13 @@ end
         img_size = 300;
         % Here we load in an image from file.
         % face image
-        theImageLocation = [p.images_dir, '\child-3.jpg'];
-        theImage_face = imread(theImageLocation);
+        theImageLocation = [p.images_dir, '\car-27.jpg'];
+        theImage_car = imread(theImageLocation);
         % Make the image into a texture
-        imageTexture_face = Screen('MakeTexture', p.ptb.w, theImage_face);
+        imageTexture_car = Screen('MakeTexture', p.ptb.w, theImage_car);
 
         % House Image
-        theImageLocation = [p.images_dir, '\house-3.jpg'];
+        theImageLocation = [p.images_dir, '\house-38.jpg'];
         theImage = imread(theImageLocation);
         % Make the image into a texture
         imageTexture_house = Screen('MakeTexture', p.ptb.w, theImage);
@@ -730,25 +783,89 @@ end
         NewImage_Left_Bottom = [p.ptb.width/2-img_size, p.ptb.height/2, p.ptb.width/2, p.ptb.height/2+img_size];
 
         if rule == 0
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Left_Top, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Right_Bottom, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Top, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Bottom, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Right_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Bottom, 0);
+            if strcmp(language, 'PT')
+                text3 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de cima estiver ativa e aparecer.\n', ...
+                'uma casa, responda à direita,\n', ...
+                'se aparecer\n', ... 
+                'um carro, responda à esquerda.'];
+                text4 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de baixo estiver ativa e aparecer.\n', ...
+                'um carro, responda à direita,\n', ...
+                'se aparecer\n', ... 
+                'uma casa, responda à esquerda.'];
+            else
+                text3 = ['If just before the decision cue,\n', ...
+                    'the top cloud is active\n', ...
+                    'and the decision cue is\n', ...
+                    'a house, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a car, press the left button.'];
+                text4 = ['If just before the decision cue,\n', ...
+                    'the bottom cloud is active\n', ...
+                    'and the decision cue is\n', ...
+                    'a car, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a house, press the left button.'];
+            end
         else
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Right_Bottom, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Right_Top, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Left_Bottom, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Top, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Bottom, 0);
+            if strcmp(language, 'PT')
+                text3 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de cima estiver ativa e aparecer.\n', ...
+                    'um carro, responda à direita,\n', ...
+                    'se aparecer\n', ... 
+                    'uma casa, responda à esquerda.'];
+                text4 = ['Se, na altura da resposta,\n', ...
+                'a nuvem de baixo estiver ativa e aparecer.\n', ...
+                    'uma casa, responda à direita,\n', ...
+                    'se aparecer\n', ... 
+                    'um carro, responda à esquerda.'];
+            else
+                text3 = ['If just before the decision cue,\n', ...
+                    'the top cloud is active\n', ...
+                    'and the decision cue is\n', .....
+                    'a car, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a house, press the left button.'];
+                text4 = ['If just before the decision cue,\n', ...
+                    'the bottom cloud is active\n', ...
+                    'and the decision cue is\n', ...
+                    'a house, press the right button,\n', ...
+                    'if the decision cue is\n', ...
+                    'a car, press the left button.'];
+            end
         end
        
         Screen('DrawTexture', p.ptb.w, fullWindowMask);
         draw_fix(p);
-        text = 'Carregue numa tecla para avançar.';
-        DrawFormattedText(p.ptb.w, text, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
-        text = 'Carregue numa tecla para avançar.';
-        DrawFormattedText(p.ptb.w, text, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
-        text = 'Preste atenção e memorize esta regra.';
-        DrawFormattedText(p.ptb.w, text, 'center', 9*p.ptb.height/1, p.stim.white,[],[],[],2,[]);
+        %DrawFormattedText(win, tstring [, sx][, sy][, color][, wrapat][, flipHorizontal][, flipVertical][, vSpacing][, righttoleft][, winRect])
+
+        Screen('TextSize', p.ptb.w, 16);
+        DrawFormattedText(p.ptb.w, text3, .25*p.ptb.width/10, p.ptb.height/2-img_size*3/4, p.stim.white,[],[],[],2,[]);
+        DrawFormattedText(p.ptb.w, text4, .25*p.ptb.width/10, p.ptb.height/2+img_size/4, p.stim.white,[],[],[],2,[]);
+        
+        Screen('TextSize', p.ptb.w,  20);
+        if strcmp(language, 'PT')
+            text1 = 'Quando tiver a regra bem memorizada, carregue numa tecla para avançar.';
+            DrawFormattedText(p.ptb.w, text1, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+            text2 = 'Preste atenção e memorize esta regra.';
+            DrawFormattedText(p.ptb.w, text2, 'center', 1*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        else
+            text1 = 'Once you have learned the rule, press any key to continue.';
+            DrawFormattedText(p.ptb.w, text1, 'center', 9*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+            text2 = 'Pay attention and memorize this rule.';
+            DrawFormattedText(p.ptb.w, text2, 'center', 1*p.ptb.height/10, p.stim.white,[],[],[],2,[]);
+        end
+
+
         %% Flip to the screen
         Screen('Flip', p.ptb.w);
 
@@ -766,44 +883,44 @@ end
                                     if strcmp(keys, 'm')
                                        correct_trial = 1;
                                        text = ['Correto! \n', ...  
-                                       'Era a distribuição de baixo que estava ativa.\n\n', ...
+                                       'Era a nuvem de baixo que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];
                                     elseif strcmp(keys, 'z')
                                        text = ['Errado! \n', ...  
-                                       'Era a distribuição de baixo que estava ativa.\n\n', ...
+                                       'Era a nuvem de baixo que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];
                                     end
                                 elseif gener_side >0 && stim_id ==1 % bottom and houses 
                                     if strcmp(keys, 'z')
                                        correct_trial = 1;
                                        text = ['Correto! \n', ...  
-                                       'Era a distribuição de baixo que estava ativa.\n\n', ...
+                                       'Era a nuvem de baixo que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];  
                                     elseif strcmp(keys, 'm')
                                        text = ['Errado! \n', ...  
-                                       'Era a distribuição de baixo que estava ativa.\n\n', ...
+                                       'Era a nuvem de baixo que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.']; 
                                     end
                                 elseif gener_side <0 && stim_id ==0 % top and faces
                                     if strcmp(keys, 'z')
                                        correct_trial = 1;
                                        text = ['Correto! \n', ...  
-                                       'Era a distribuição de cima que estava ativa.\n\n', ...
+                                       'Era a nuvem de cima que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];  
                                     elseif strcmp(keys, 'm')
                                        text = ['Errado! \n', ...  
-                                       'Era a distribuição de cima que estava ativa.\n\n', ...
+                                       'Era a nuvem de cima que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];  
                                     end
                                 elseif gener_side < 0 && stim_id == 1 % top and houses
                                     if strcmp(keys, 'm')
                                        correct_trial = 1;
                                        text = ['Correto! \n', ...  
-                                       'Era a distribuição de cima que estava ativa.\n\n', ...
+                                       'Era a nuvem de cima que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.']; 
                                     elseif strcmp(keys, 'z')
                                        text = ['Errado! \n', ...  
-                                       'Era a distribuição de cima que estava ativa.\n\n', ...
+                                       'Era a nuvem de cima que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];  
                                     end
                                 end
@@ -812,44 +929,44 @@ end
                                     if strcmp(keys, 'z')
                                        correct_trial = 1;
                                        text = ['Correto! \n', ...  
-                                       'Era a distribuição de baixo que estava ativa.\n\n', ...
+                                       'Era a nuvem de baixo que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.']; 
                                     elseif strcmp(keys, 'm')
                                        text = ['Errado! \n', ...  
-                                       'Era a distribuição de baixo que estava ativa.\n\n', ...
+                                       'Era a nuvem de baixo que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];  
                                     end
                                 elseif gener_side >0 && stim_id ==1 % bottom and houses 
                                     if strcmp(keys, 'm')
                                        correct_trial = 1;
                                       text = ['Correto! \n', ...  
-                                       'Era a distribuição de baixo que estava ativa.\n\n', ...
+                                       'Era a nuvem de baixo que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];  
                                     elseif strcmp(keys, 'z')
                                        text = ['Errado! \n', ...  
-                                       'Era a distribuição de baixo que estava ativa.\n\n', ...
+                                       'Era a nuvem de baixo que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];  
                                     end
                                 elseif gener_side <0 && stim_id ==0 % top and faces
                                     if strcmp(keys, 'm')
                                        correct_trial = 1;
                                        text = ['Correto! \n', ...  
-                                       'Era a distribuição de cima que estava ativa.\n\n', ...
+                                       'Era a nuvem de cima que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.']; 
                                     elseif strcmp(keys, 'z')
                                        text = ['Errado! \n', ...  
-                                       'Era a distribuição de cima que estava ativa.\n\n', ...
+                                       'Era a nuvem de cima que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];
                                     end
                                 elseif gener_side < 0 && stim_id == 1 % top and houses
                                     if strcmp(keys, 'z')
                                        correct_trial = 1;
                                        text = ['Correto! \n', ...
-                                       'Era a distribuição de cima que estava ativa.\n\n', ...
+                                       'Era a nuvem de cima que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];  
                                     elseif strcmp(keys, 'm')
                                        text = ['Errado! \n', ...
-                                       'Era a distribuição de cima que estava ativa.\n\n', ...
+                                       'Era a nuvem de cima que estava ativa.\n\n', ...
                                        'Carregue numa tecla para avançar.'];
                                     end
                                  end 
@@ -864,75 +981,116 @@ end
 
     function show_probability_distributions(p)
     % show image with example of samples from both distributions
-    text = 'Duas fontes geradoras de pontos.';
-    DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
-    text = 'Carregue numa tecla para avançar.';
-    DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
-    % Here we load in an image from file.
-    theImageLocation = [pwd, '\generative_processes_easy_3.jpg'];
+    if strcmp(language, 'PT')
+        text1 = 'Aqui estão representadas a azul e a verde duas nuvens geradoras de pontos.';
+        text2 = ['Neste teste, vários pontos serão apresentados\n'...
+            'sequencialmente, numa linha vertical.\n'...
+            'O objetivo é conseguir estimar qual das\n'... 
+            'nuvens gera os pontos apresentados.'];
+        text3 = 'Carregue numa tecla para avançar.'; 
+    else
+        text1 = 'Below, two dots-generating clouds are represented in blue and green.';
+        text2 = ['In this test, several dots will be presented\n' ...
+            'sequentially, in a vertical line.\n' ...
+            'The goal is to be able to estimate which\n' ...
+            'cloud is generating the dots presented.'];
+        text3 = 'Press any key to continue.';        
+    end
+    
+     % Here we load an image from file.
+    if strcmp(p.hostname, 'czc0211hsd') %gab72
+        theImageLocation = [pwd, '\generative_processes_easy_SNR_2_5_gab92.jpg'];
+    elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94 
+        theImageLocation = [pwd, '\generative_processes_easy_SNR_2_5_lab94.jpg'];
+    else
+        theImageLocation = [pwd, '\generative_processes_easy_SNR_2_5.jpg'];
+    end
     theImage_example = imread(theImageLocation);
     % Make the image into a texture
     imageTexture_example = Screen('MakeTexture', p.ptb.w, theImage_example);
     Screen('DrawTexture', p.ptb.w, imageTexture_example);
+    %load text
+    DrawFormattedText(p.ptb.w, text1, 'center',  p.ptb.CrossPosition_y-400, p.stim.white,[],[],[],2,[]);
+    Screen('TextSize', p.ptb.w, 18);
+    DrawFormattedText(p.ptb.w, text2, .25*p.ptb.width/10, 'center', p.stim.white,[],[],[],2,[]);
+    Screen('TextSize', p.ptb.w, 20);
+    DrawFormattedText(p.ptb.w, text3, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
+   
     Screen('Flip', p.ptb.w);
     [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
     key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
     % Screen('Flip', p.ptb.w);
     block = 1;% easy version
-            % PHASE 1 - example of bottom distribution
-            text = ['Sequência de pontos com origem na fonte inferior. \n\n'...
-                    'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
-            draw_fix(p); coloured_task = 1;
-    %         [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
-            [seq,~] = make_glaze_block_training_sequences(25, p.sd(block), p.location_of_mean(block), 0, 1);
-            ActSampleOnset = GetSecs; p.seq.phase1 = seq;
-             for trial  = 1:25
-                %Get the variables that Trial function needs.
-                stim_id       = seq.stim(trial);
-                type          = seq.type(trial);
-                location      = seq.sample(trial);
-                gener_side    = seq.generating_side(trial);
-                OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
-                % Show a single sample
-                arrow = 0;
-                [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
-             end
+        % PHASE 1 - example of bottom distribution
+        if strcmp(language, 'PT')
+            text = ['Agora, vamos mostrar uma sequência de pontos com origem na nuvem inferior.\n\n'...
+                'Carregue numa tecla para avançar.'];
+        else
+            text = ['Now, we are going to show a sequence of dots drawn from the lower cloud.\n\n'...
+                'Press any key to advance.'];
+        end
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip', p.ptb.w);
+        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+        key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
+        draw_fix(p); coloured_task = 1;
+%         [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
+        [seq,~] = make_glaze_block_training_sequences(25, p.sd(block), p.location_of_mean(block), 0, 1);
+        ActSampleOnset = GetSecs; p.seq.phase1 = seq;
+         for trial  = 1:25
+            %Get the variables that Trial function needs.
+            stim_id       = seq.stim(trial);
+            type          = seq.type(trial);
+            location      = seq.sample(trial);
+            gener_side    = seq.generating_side(trial);
+            OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
+            % Show a single sample
+            arrow = 0;
+            [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+         end
 
-             WaitSecs(1);
-             Screen('Flip', p.ptb.w);
-            % notice that and second phase - example of top distribution
+         WaitSecs(1);
+         Screen('Flip', p.ptb.w);
+        % notice that and second phase - example of top distribution
+        if strcmp(language, 'PT')
             text = ['Note que na sequência anterior apesar da maioria dos pontos se encontrarem \n'...
-                'a baixo da cruz de fixação, alguns apareceram acima da cruz de fixação.\n\n', ...
+                'a baixo do alvo de fixação, alguns apareceram acima do alvo de fixação.\n\n', ...
                 'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
-            % PHASE 2
-            text = ['A seguir vamos apresentar uma sequência de pontos com origem na fonte superior.\n\n', ...
+        else
+            text = ['Note that in the previous sequence despite the fact that most dots were\n' ...
+                'below the fixation target, some appeared above the fixation target.\n\n', ...
+                'Press any key to continue.'];            
+        end
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip', p.ptb.w);
+        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+        key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), return, end
+        % PHASE 2
+        if strcmp(language, 'PT')
+            text = ['A seguir, vamos apresentar uma sequência de pontos com origem na nuvem superior.\n\n', ...
                 'Carregue numa tecla para avançar.'];
-            DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-            Screen('Flip', p.ptb.w);
-            [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
-            key_pressed = KbName(keyCode);
-            draw_fix(p); coloured_task = 1;
-    %       [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
-            [seq,~] = make_glaze_block_training_sequences(25, p.sd(block), p.location_of_mean(block), 0, -1);
-            ActSampleOnset = GetSecs; p.seq.phase2 = seq;
-             for trial  = 1:25
-                %Get the variables that Trial function needs.
-                stim_id       = seq.stim(trial);
-                type          = seq.type(trial);
-                location      = seq.sample(trial);
-                gener_side    = seq.generating_side(trial);
-                OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
-                % Show a single sample
-                [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
-             end
+        else
+            text = ['Next, we will present a sequence of dots originating from the upper cloud.\n\n', ...
+                'Press any key to continue.'];          
+        end
+        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
+        Screen('Flip', p.ptb.w);
+        [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
+        key_pressed = KbName(keyCode);
+        draw_fix(p); coloured_task = 1;
+%       [seq, es] = make_glaze_block_training_sequences(trials, sigma, threshold, question_trials, set_side)
+        [seq,~] = make_glaze_block_training_sequences(25, p.sd(block), p.location_of_mean(block), 0, -1);
+        ActSampleOnset = GetSecs; p.seq.phase2 = seq;
+         for trial  = 1:25
+            %Get the variables that Trial function needs.
+            stim_id       = seq.stim(trial);
+            type          = seq.type(trial);
+            location      = seq.sample(trial);
+            gener_side    = seq.generating_side(trial);
+            OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
+            % Show a single sample
+            [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+         end
     end
 
     function p = inference_task(p, coloured_task, block, number_of_trials)              
@@ -961,28 +1119,38 @@ end
                 elseif type == 1 % Choice trial.
                     trial_number = trial_number+1;
                     [p, response] = visual_cue_trial(p);
+                    if strcmp(language, 'PT')
+                        text_correct = 'Correto!\n';
+                        text_wrong = 'Errado!\n';
+                        text_lower = ['Era a nuvem de baixo que estava ativa.\n\n', ...
+                               'Carregue numa tecla para avançar.'];
+                        text_upper = ['Era a nuvem de cima que estava ativa.\n\n', ...
+                               'Carregue numa tecla para avançar.'];
+                        text_wrong_key = ['Carregou na tecla errada.\n\n', ...
+                           'Carregue numa tecla para avançar.'];
+                    else
+                        text_correct = 'Correct!\n';
+                        text_wrong = 'Wrong!\n';
+                        text_lower = ['It was the lower cloud that was active. \n\n', ...
+                               'Press any key to continue.'];
+                        text_upper = ['It was the upper cloud that was active. \n\n', ...
+                               'Press any key to continue.'];
+                        text_wrong_key = ['You pressed the wrong key. \n\n', ...
+                           'Press any key to continue.'];
+                    end
 
                     if gener_side>0 && response == 1
                        correct = correct+1;
-                       text = ['Correto! \n', ...  
-                           'Era a fonte de baixo que estava ativa.\n\n', ...
-                           'Carregue numa tecla para avançar.'];
+                       text = [text_correct, text_lower];
                     elseif gener_side<0 && response == 0
                         correct = correct+1;
-                        text = ['Correto! \n', ... 
-                            'Era a fonte de cima que estava ativa.\n\n', ...
-                           'Carregue numa tecla para avançar.'];
+                        text = [text_correct, text_upper];
                     elseif gener_side>0 && response == 0
-                       text = ['Errado! \n', ...  
-                           'Era a fonte de baixo que estava ativa.\n\n', ...
-                           'Carregue numa tecla para avançar.'];
+                       text = [text_wrong, text_lower];
                     elseif gener_side<0 && response == 1
-                       text = ['Errado! \n', ...  
-                           'Era a fonte de cima que estava ativa.\n\n', ...
-                           'Carregue numa tecla para avançar.'];
+                       text = [text_wrong, text_upper];
                     else
-                       text = ['Carregou na tecla errada.\n\n', ...
-                           'Carregue numa tecla para avançar.'];
+                       text = text_wrong_key;
                     end
                     DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
                     Screen('Flip', p.ptb.w);
@@ -1003,9 +1171,13 @@ end
             % save accuracy on p variable
             if coloured_task == 1, p.accuracy.phase3_easy_coloured{run} = correct/trial_number; elseif coloured_task == 0 && block == 1, p.accuracy.phase4_easy{run} = correct/trial_number;
             elseif coloured_task == 0 && block == 2, p.accuracy.phase5_difficult{run} = correct/trial_number; end
-            
-            text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
-                'Se pretende repetir o bloco pressione a tecla I, para avançar pressione a tecla P.'];
+            if strcmp(language, 'PT')
+                text = [sprintf('Nesta sessão acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
+                    'Para repetir a sessão pressione a tecla I. Para avançar pressione a tecla P.'];
+            else
+                 text = [sprintf('In this session, you got %2.0f%% correct answers.\n\n', 100*correct/trial_number),...
+                    'If you want to repeat the block, press the I key, otherwise press the P key to proceed.'];               
+            end
             DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
             Screen('Flip', p.ptb.w);
 
@@ -1027,13 +1199,23 @@ end
     % PHASE 5 and 6
     function p = hierarchical_decisions_training_phase(p, block, number_of_trials)
         arrow = 0;
-        text = ['Nesta parte do treino, as respostas terão em conta não só qual a fonte ativa,\n'...
-                    'mas também qual a imagem que aparece a indicar que tem de tomar uma decisão.\n\n'...
-                    'Essa imagem pode ser uma cara ou uma casa.\n\n'...
-                    'Terá de responder de acordo com uma regra que será mostrada a seguir.\n\n'...
-                    'Use a tecla Z para resposta à esquerda com o indicar esquerdo.\n'...
-                    'Use a tecla M para resposta à direita com o indicador direito.\n\n'...
-                    'Carregue numa tecla para avançar.\n'];
+        if strcmp(language, 'PT')
+            text = ['Nesta parte do treino, as respostas terão em conta não só qual a nuvem ativa,\n'...
+                        'mas também qual a imagem que aparece a indicar que tem de tomar uma decisão.\n\n'...
+                        'Essa imagem pode ser um carro ou uma casa.\n\n'...
+                        'Terá de responder de acordo com a regra que será mostrada a seguir.\n\n'...
+                        'Use a tecla Z para resposta à esquerda com o indicador esquerdo.\n'...
+                        'Use a tecla M para resposta à direita com o indicador direito.\n\n'...
+                        'Carregue numa tecla para avançar.\n'];
+        else
+            text = ['In this part of the training, the answers will take into account not only which cloud is active,\n' ...
+                        'but also which image appears indicating that you have to make a decision.\n\n' ...
+                        'This image can be a car or a house.\n\n' ...
+                        'You will have to answer according to the rule that will be shown next.\n\n' ...
+                        'Use the Z key to answer on the left with the left index finger.\n'...
+                        'Use the M key to answer on the right with the right index finger.\n\n' ...
+                        'Press any key to continue.\n'];
+        end
         DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
         Screen('Flip', p.ptb.w);
         [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
@@ -1046,18 +1228,31 @@ end
         for coloured_task = [1 0] % first run with colours then without colours
 
             if coloured_task == 1 % PHASE 5
-                text = ['Nesta primeira fase, poderá usar as cores para inferir qual o conjunto ativo.\n\n'...
-                    'Verde = conjunto superior. Azul = conjunto inferior.\n\n'...
-                    'Após o aparecimento da imagem, tem dois segundos para responder.\n\n'...
-                    'Carregue numa tecla para avançar.\n'];
+                if strcmp(language, 'PT')
+                    text = ['Numa primeira fase, poderá usar as cores para inferir qual a nuvem ativa.\n\n'...
+                        'Verde = nuvem superior. Azul = nuvem inferior.\n\n'...
+                        'Após o aparecimento da imagem, tem dois segundos para responder.\n\n'...
+                        'Carregue numa tecla para avançar.\n'];
+                else
+                    text = ['In a first phase, you can use the colours to infer which cloud is active.\n\n' ...
+                        'Green = upper cloud. Blue = lower cloud.\n\n'...
+                        'After the image appears, you have two seconds to respond.\n\n' ...
+                        'Press any key to continue.\n'];
+                end
                 DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
                 Screen('Flip', p.ptb.w);
                 [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
                 key_pressed = KbName(keyCode); if strcmp(key_pressed, 'q'), break, end   
             else % PHASE 6
-                text = ['Agora terá de inferir qual a fonte ativa sem a ajuda das cores.\n\n'...    
-                    'A representação visual da regra será mostrada a seguir.\n\n'...
-                    'Carregue numa tecla para avançar.\n'];
+                if strcmp(language, 'PT')
+                    text = ['Agora terá de inferir qual a nuvem ativa sem a ajuda das cores.\n\n'...    
+                        'A representação visual da regra será mostrada a seguir.\n\n'...
+                        'Carregue numa tecla para avançar.\n'];
+                else
+                    text = ['Now you will have to infer which cloud is active without the help of the colors.\n\n' ...
+                        'The visual representation of the rule will be shown next.\n\n' ...
+                        'Press any key to continue. \ N'];
+                end
                 DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
                 Screen('Flip', p.ptb.w);
                 [~, keyCode, ~] = KbStrokeWait(p.ptb.device);
@@ -1087,16 +1282,16 @@ end
 
                 %% image files to load
                 % dir with face or house images files
-                face_dir = [p.images_dir, '\selected_faces_adults_similar_lum'];
-                house_dir = [p.images_dir, '\selected_houses_similar_lum'];
+                face_dir = [p.images_dir, '\selected_cars_similar_lum'];
+                house_dir = [p.images_dir, '\selected_houses_similar_lum2cars'];
                 % check how many choice stimulus of each type for this run
-                number_face_stim = length(find(seq.stim == 0));
+                number_car_stim = length(find(seq.stim == 0));
                 number_house_stim = length(find(seq.stim == 1));
                 Files = dir(fullfile(face_dir,'*.jpg'));
-                file_order_faces = randperm(size(Files, 1)); 
-                p.choice_trials.file_order_faces = file_order_faces(1:number_face_stim);
-                for numb_files=1:number_face_stim
-                    p.choice_trials.file_names_faces{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_faces(numb_files)).name);
+                file_order_cars = randperm(size(Files, 1)); 
+                p.choice_trials.file_order_cars = file_order_cars(1:number_car_stim);
+                for numb_files=1:number_car_stim
+                    p.choice_trials.file_names_cars{numb_files, 1} = fullfile(Files(file_order_cars(numb_files)).folder, Files(file_order_cars(numb_files)).name);
                 end
                 Files = dir(fullfile(house_dir,'*.jpg'));
                 file_order_houses = randperm(size(Files, 1));
@@ -1107,7 +1302,7 @@ end
 
                 draw_fix(p);
                 correct = 0; trial_number = 0;
-                count_faces = 0; count_houses = 0; % to determine which image to show
+                count_cars = 0; count_houses = 0; % to determine which image to show
                 ActSampleOnset = GetSecs;
                 for trial  = 1:number_of_trials%size(p.sequence.stim, 2)
                     %Get the variables that Trial function needs.
@@ -1123,8 +1318,8 @@ end
                     elseif type == 1 % Choice trial.
                         trial_number = trial_number+1;
                         if stim_id == 0
-                            count_faces = count_faces+1;
-                            theImageLocation = p.choice_trials.file_names_faces{count_faces};
+                            count_cars = count_cars+1;
+                            theImageLocation = p.choice_trials.file_names_cars{count_cars};
                         elseif stim_id == 1
                             count_houses = count_houses+1;
                             theImageLocation = p.choice_trials.file_names_houses{count_houses};
@@ -1150,8 +1345,13 @@ end
                     p.accuracy.phase7_no_color{run_no_colour} = correct/trial_number;
                 end
                 % feedback
-                text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
-                    'Se pretende repetir o bloco pressione a tecla I, para avançar pressione a tecla P.'];
+                if strcmp(language, 'PT')
+                    text = [sprintf('Neste bloco acertou %2.0f%% das respostas.\n\n', 100*correct/trial_number),...
+                    'Para repetir o bloco pressione a tecla I; para avançar pressione a tecla P.'];
+                else
+                    text = [sprintf('In this session, you got %2.0f%% correct responses.\n\n', 100*correct/trial_number),...
+                    'If you want to repeat the session, press the I key, otherwise press the P key to proceed.']; 
+                end
                 DrawFormattedText(p.ptb.w, text, 'center', round(p.ptb.rect(4)*0.5), p.stim.white,[],[],[],2,[]);
                 Screen('Flip', p.ptb.w);
                 while 1
