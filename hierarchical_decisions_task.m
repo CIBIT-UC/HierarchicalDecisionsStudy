@@ -23,10 +23,11 @@ IOPort('CloseAll');
 %% >>>>> Set up a lot of stuff
 % Load stimulus sequence
 load_dir = [pwd '\exp_data' filesep subject];
-task_sequences=load([load_dir filesep 'task_sequences']);
+sequence = load([load_dir filesep 'task_sequences']);
+
 
 if subject > 0
-    sequence = task_sequences.task_sequences{session}{run};
+    sequence = sequence.task_sequences{session}{run};
     fmri = sequence.fmri; % if false skip waiting for pulses.
 end
 
