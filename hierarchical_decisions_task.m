@@ -6,8 +6,16 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
 % coloured_task = 0 (grey samples) or 1 (coloured samples according to source)
 % language = 'PT' or 'EN'
 % press 'q' on choice trials to quit
-NoEyelink = 0; %is Eyelink wanted?
-debug   = 1; % debug mode => 1: transparent window enabling viewing the background.
+
+% Fixation target used was adapted from:
+% Vision Res. 2013 Jan 14;76:31-42.
+% doi: 10.1016/j.visres.2012.10.012. Epub 2012 Oct 23.
+% What is the best fixation target? The effect of target shape on stability of fixational eye movements
+% L Thaler  1 , A C Schütz, M A Goodale, K R Gegenfurtner
+
+
+% NoEyelink = 0; %is Eyelink wanted?
+debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
 small_window = 0; % Open a small window only
 % close ports - scanner
 IOPort('CloseAll');
@@ -42,19 +50,19 @@ SetPTB;%set visualization parameters.
 
 
 % check how many choice stimulus of each type for this run
-number_car_stim = length(find(sequence.stim == 0));
+number_face_stim = length(find(sequence.stim == 0));
 number_house_stim = length(find(sequence.stim == 1));
-Files = dir(fullfile([p.images_dir '\selected_cars_similar_lum'],'*.jpg'));
-file_order_cars = randperm(size(Files, 1)); 
-p.choice_trials.file_order_cars = file_order_cars(1:number_car_stim);
-for numb_files=1:number_car_stim
-    p.choice_trials.file_names_cars{numb_files, 1} = fullfile(Files(file_order_cars(numb_files)).folder, Files(file_order_cars(numb_files)).name);
+Files = dir(fullfile([p.images_dir '\selected_faces_adults_similar_lum'],'*.jpg'));
+file_order_faces = randperm(size(Files, 1)); 
+p.choice_trials.file_order_faces = file_order_faces(1:number_face_stim);
+for numb_files=1:number_face_stim
+    p.choice_trials.file_names_faces{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_faces(numb_files)).name);
 end
-Files = dir(fullfile([p.images_dir '\selected_houses_similar_lum2cars'] ,'*.jpg'));
+Files = dir(fullfile([p.images_dir '\selected_houses_similar_lum'] ,'*.jpg'));
 file_order_houses = randperm(size(Files, 1));
 p.choice_trials.file_order_houses = file_order_houses(1:number_house_stim);
 for numb_files=1:number_house_stim
-    p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_cars(numb_files)).folder, Files(file_order_houses(numb_files)).name);
+    p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_houses(numb_files)).name);
 end
 
 p.rule_hierarchical_decision = rule_hierarchical_decision; % to counterbalance across participants which rule in first run, can be 0 or 1
@@ -227,8 +235,8 @@ p.subject = subject;
         p.start_trials = GetSecs();
 %         start = start_trials+0.4;
         ActSampleOnset = GetSecs;
-        count_cars = 0; count_houses = 0; % to determine which image to show
-        for trial  = 1:size(p.sequence.stim, 2)
+        count_faces = 0; count_houses = 0; % to determine which image to show
+        for trial  = 1:200 %size(p.sequence.stim, 2)
             %Get the variables that Trial function needs.
             stim_id       = p.sequence.stim(trial); % nan = sample trial; car - stim_id = 0; house - stim_id = 1 
             type          = p.sequence.type(trial); % 0 = sample trial; 1 = choice trial
@@ -265,8 +273,8 @@ p.subject = subject;
             elseif type == 1
                 % Choice trial.
                 if stim_id == 0
-                    count_cars = count_cars+1;
-                    theImageLocation = p.choice_trials.file_names_cars{count_cars};
+                    count_faces = count_faces+1;
+                    theImageLocation = p.choice_trials.file_names_faces{count_faces};
                 elseif stim_id == 1
                     count_houses = count_houses+1;
                     theImageLocation = p.choice_trials.file_names_houses{count_houses};
@@ -276,7 +284,7 @@ p.subject = subject;
                 if abort==1, return, end
                 % analysis accuracy of responses
                 correct = 0;
-                if ~isnan(keycodes)
+                if ~isempty(keycodes)
                     for iii = 1:length(keycodes)
                         ReactionTime = RT(iii);
                         if fmri == 0
@@ -289,27 +297,27 @@ p.subject = subject;
                         if iii == length(keycodes) % what counts for accuracy is last response
                             if gener_side > 0 && stim_id == 0 % bottom and cars
                                 if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
-                                    correct = correct+1;
+                                    correct = 1;
                                 elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
-                                    correct = correct+1;
+                                    correct = 1;
                                 end
                             elseif gener_side >0 && stim_id ==1 % bottom and houses 
                                 if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
-                                    correct = correct+1;
+                                    correct = 1;
                                 elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
-                                    correct = correct+1;
+                                    correct = 1;
                                 end
                             elseif gener_side <0 && stim_id == 0 % top and faces
                                 if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
-                                    correct = correct+1;
+                                    correct = 1;
                                 elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
-                                    correct = correct+1;
+                                    correct = 1;
                                 end
                             elseif gener_side < 0 && stim_id == 1 % top and houses
                                 if p.rule_hierarchical_decision == 0 && (strcmp(keys, 'm') || strcmp(keys, '51') || strcmp(keys, '52'))
-                                    correct = correct+1;
+                                    correct = 1;
                                 elseif p.rule_hierarchical_decision == 1 && (strcmp(keys, 'z') || strcmp(keys, '49') || strcmp(keys, '50'))
-                                    correct = correct+1;
+                                    correct = 1;
                                 end
                             end
                         end
@@ -318,12 +326,7 @@ p.subject = subject;
                     p = Log(p, stim_id, 'NO_RESPONSE', NaN);
                 end
                 p = Log(p, stim_id, 'CHOICE_TRIAL_ACCURACY', correct);
-                if fmri == 0
-                   firstkey = KbName(keycodes(1));
-                else
-                   firstkey = keycodes(1);
-                end
-                p = Log(p, length(keycodes), 'NUMBER_OF_RESPONSES', firstkey);
+                
                 fprintf('ACCURACY: %i, ', correct);  
                 if correct == 1
                     outcomes = [outcomes 1]; %#ok<AGROW>
@@ -346,7 +349,7 @@ p.subject = subject;
     function [p, RT, keycodes, response_times, abort] = choice_trial(p, ChoiceStimOnset, stim_id, theImageLocation)
 
         abort = 0;
-        % load image of car or house - car - stim_id = 0; house - stim_id = 1 
+        % load image of face or house - face - stim_id = 0; house - stim_id = 1 
         % Here we load in an image from file.
         theImage = imread(theImageLocation);
         %    Make the image into a texture
@@ -379,7 +382,7 @@ p.subject = subject;
         % record responses
         keycodes = []; RT = []; response_times = [];
         if fmri == 1
-            while GetSecs<TimeStimOnset+ 0.2-p.ptb.slack
+            while GetSecs < TimeStimOnset + 0.5 - p.ptb.slack
                 % listen to button presses      
                 [key,timestamp,~] = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key)
@@ -393,11 +396,11 @@ p.subject = subject;
             end
         end
         
-        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+.2 -p.ptb.slack, 0);  %<----- FLIP             
-        p = Log(p,TimeStimOffset, 'CHOICE_TRIAL_STIMOFF', nan);
+        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset + .5 - p.ptb.slack, 0);  %<----- FLIP image duration 500 ms      
+        p = Log(p, TimeStimOffset, 'CHOICE_TRIAL_STIMOFF', nan);
         Eyelink('Message', 'CHOICE_TRIAL_STIMOFF');
         if fmri == 1
-            while GetSecs<TimeStimOffset+1.8
+            while GetSecs < TimeStimOffset + 1.5
                 % listen to button presses      
                 [key,timestamp,~] = IOPort('Read',p.LuminaHandle);
                 if ~isempty(key)
@@ -410,7 +413,7 @@ p.subject = subject;
                 end
             end 
         else
-            WaitSecs(1.8);
+            WaitSecs(1.5);
             % Now record response
             [keycodes, response_times] = KbQueueDump(p);
             RT = response_times - TimeStimOnset;
@@ -526,62 +529,50 @@ p.subject = subject;
         if strcmp(p.hostname, 'czc0211hsd') %gab 72
 %             p.display.resolution = [1680 1050];
             p.display.dimension = [47 29.5];
-            p.display.distance = [52, 64]; 
-            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
+            p.display.distance = [52, 64];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
             p.stim.lumdiff = 12; % luminance difference within sample fill and outline
-            % dir with face or house images files
-%             car_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_cars_adults_similar_lum'];
-%             house_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab\selected_houses_similar_lum'];
-            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
         elseif strcmp(p.hostname, 'cnd0151937') % laptop hp elitebook
 %             p.display.resolution = [1600 900];
             p.display.dimension = [34.5 19.5];
             p.display.distance = [52, 64]; 
-            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
             p.stim.lumdiff = 12; % luminance difference within sample fill and outline
-            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
         elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94  = ['DESKTOP-MKKOQUF']
 %             p.display.resolution = [1600 900]; %[1440 1080]; %[1920 1080]; Maria set to laptop 14Sep2019
-            p.display.dimension = [34.5 19.5]; %[52, 39.5]; %[52, 29.5]; Maria set to laptop 14Sep2019
+            p.display.dimension = [34.5 19.5]; %[52, 39.5]; %[52, 29.5]; Maria set to laptop 14Sep2019 - CHECK IN LAB AND CORRECT!
             p.display.distance = [52, 50]; %[62, 59]; % 
-            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg = [48 48 48];%[128, 128, 128];
             p.stim.fix_target = [64 64 64];
             p.stim.lumdiff = 12; % luminance difference within sample fill and outline
-            % dir with face or house images files
-            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab']; 
         elseif  strcmp(p.hostname, 'DESKTOP-TKTCOK0') % MRI SCANNER - CHECK CODE
             p.display.dimension = [87.8 48.5];
             p.display.distance = [175, 182.5];
-            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [92 92 92];
             p.stim.fix_target = [105 105 105]; 
             p.stim.lumdiff = 10; % luminance difference within sample fill and outline
-            % dir with car and house image files
-            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab']; 
         else % other displays
 %             p.display.resolution = [1600 900]; %[1440 1080]; %[1920 1080]; Maria set to laptop 14Sep2019
             p.display.dimension = [34.5 19.5];
             p.display.distance = [52, 50]; 
-            p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
-            p.stim.lumdiff = 12; % luminance difference within sample fill and outline
-            % dir with face or house images files
-            p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];        
+            p.stim.lumdiff = 12; % luminance difference within sample fill and outline     
         end
-
-        p.stim.r_inner = .1;
-        p.stim.sample_duration = .1;
+        
+        p.images_dir = [pwd '\Stanford Vision & Perception Neuroscience Lab'];
+        p.path.baselocation = [pwd '\exp_data\' subject filesep 'session' num2str(session) filesep 'run' num2str(run)];
         %create the base folder if not yet there.
         if exist(p.path.baselocation) == 0 %#ok<EXIST>
             mkdir(p.path.baselocation);
         end
+        
         p.timestamp                     = datestr(now, 30); %the time_stamp of the current experiment.
+        
+        p.stim.r_inner = .1;
+        p.stim.sample_duration = .1;
 
         %% %%%%%%%%%%%%%%%%%%%%%%%%%
         
@@ -1016,13 +1007,13 @@ p.subject = subject;
         img_size = 300;
         % Here we load in an image from file.
         % face image
-        theImageLocation = [p.images_dir, '\car-27.jpg'];
-        theImage_car = imread(theImageLocation);
+        theImageLocation = [p.images_dir, '\child-3.jpg'];
+        theImage_face = imread(theImageLocation);
         % Make the image into a texture
-        imageTexture_car = Screen('MakeTexture', p.ptb.w, theImage_car);
+        imageTexture_car = Screen('MakeTexture', p.ptb.w, theImage_face);
 
         % House Image
-        theImageLocation = [p.images_dir, '\house-38.jpg'];
+        theImageLocation = [p.images_dir, '\house-3.jpg'];
         theImage = imread(theImageLocation);
         % Make the image into a texture
         imageTexture_house = Screen('MakeTexture', p.ptb.w, theImage);
@@ -1078,10 +1069,10 @@ p.subject = subject;
                 'a nuvem de cima estiver ativa e aparecer.\n', ...
                 'uma casa, responda à direita,\n', ...
                 'se aparecer\n', ... 
-                'um carro, responda à esquerda.'];
+                'uma cara, responda à esquerda.'];
                 text4 = ['Se, na altura da resposta,\n', ...
                 'a nuvem de baixo estiver ativa e aparecer.\n', ...
-                'um carro, responda à direita,\n', ...
+                'uma cara, responda à direita,\n', ...
                 'se aparecer\n', ... 
                 'uma casa, responda à esquerda.'];
             else
@@ -1090,11 +1081,11 @@ p.subject = subject;
                     'and the decision cue is\n', ...
                     'a house, press the right button,\n', ...
                     'if the decision cue is\n', ...
-                    'a car, press the left button.'];
+                    'a face, press the left button.'];
                 text4 = ['If just before the decision cue,\n', ...
                     'the bottom cloud is active\n', ...
                     'and the decision cue is\n', ...
-                    'a car, press the right button,\n', ...
+                    'a face, press the right button,\n', ...
                     'if the decision cue is\n', ...
                     'a house, press the left button.'];
             end
@@ -1106,19 +1097,19 @@ p.subject = subject;
             if strcmp(language, 'PT')
                 text3 = ['Se, na altura da resposta,\n', ...
                 'a nuvem de cima estiver ativa e aparecer.\n', ...
-                    'um carro, responda à direita,\n', ...
+                    'uma cara, responda à direita,\n', ...
                     'se aparecer\n', ... 
                     'uma casa, responda à esquerda.'];
                 text4 = ['Se, na altura da resposta,\n', ...
                 'a nuvem de baixo estiver ativa e aparecer.\n', ...
                     'uma casa, responda à direita,\n', ...
                     'se aparecer\n', ... 
-                    'um carro, responda à esquerda.'];
+                    'uma cara, responda à esquerda.'];
             else
                 text3 = ['If just before the decision cue,\n', ...
                     'the top cloud is active\n', ...
                     'and the decision cue is\n', .....
-                    'a car, press the right button,\n', ...
+                    'a face, press the right button,\n', ...
                     'if the decision cue is\n', ...
                     'a house, press the left button.'];
                 text4 = ['If just before the decision cue,\n', ...
@@ -1126,7 +1117,7 @@ p.subject = subject;
                     'and the decision cue is\n', ...
                     'a house, press the right button,\n', ...
                     'if the decision cue is\n', ...
-                    'a car, press the left button.'];
+                    'a face, press the left button.'];
             end
         
         end
