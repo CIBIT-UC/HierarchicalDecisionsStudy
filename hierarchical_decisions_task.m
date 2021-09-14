@@ -44,7 +44,11 @@ p         = []; % parameter structure that contains all info about the experimen
 % -- EYETRACKING
 % Do you want to use the Eyelink eyetracking in dummymode (1) or not (2) ?
 p.ET_dummymode = menu('Do you want to use the Eyelink eyetracking in dummymode?', 'Yes', 'No');
-if p.ET_dummymode==2, p.ET_dummymode = 0; end
+if p.ET_dummymode==2
+    p.ET_dummymode = 0; NoEyelink = 1;
+else
+    NoEyelink = 0;
+end
 
 SetParams;%set parameters of the experiment
 SetPTB;%set visualization parameters.
