@@ -561,7 +561,7 @@ p.subject = subject;
         else % other displays
 %             p.display.resolution = [1600 900]; %[1440 1080]; %[1920 1080]; Maria set to laptop 14Sep2019
             p.display.dimension = [34.5 19.5];
-            p.display.distance = [52, 50]; 
+            p.display.distance = [55, 55]; 
             p.stim.bg  = [128, 128, 128];
             p.stim.fix_target = [144 144 144]; 
             p.stim.lumdiff = 12; % luminance difference within sample fill and outline     
