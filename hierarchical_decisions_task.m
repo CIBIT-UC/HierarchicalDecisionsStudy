@@ -240,6 +240,7 @@ p.subject = subject;
 %         start = start_trials+0.4;
         ActSampleOnset = GetSecs;
         count_faces = 0; count_houses = 0; % to determine which image to show
+
         for trial  = 1:size(p.sequence.stim, 2)
             %Get the variables that Trial function needs.
             stim_id       = p.sequence.stim(trial); % nan = sample trial; car - stim_id = 0; house - stim_id = 1 

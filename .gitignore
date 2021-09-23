@@ -1,2 +1,4 @@
 *.asv
 **/*.asv
+exp_data/
+**/exp_data
