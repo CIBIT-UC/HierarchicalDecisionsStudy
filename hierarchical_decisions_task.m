@@ -21,10 +21,10 @@ small_window = 0; % Open a small window only
 IOPort('CloseAll');
 
 %% >>>>> Set up a lot of stuff
+rng('shuffle'); % ensure random is always different
 % Load stimulus sequence
 load_dir = [pwd '\exp_data' filesep subject];
 sequence = load([load_dir filesep 'task_sequences']);
-
 
 if subject > 0
     sequence = sequence.task_sequences{session}{run};
@@ -45,25 +45,22 @@ p         = []; % parameter structure that contains all info about the experimen
 % Do you want to use the Eyelink eyetracking in dummymode (1) or not (2) ?
 p.ET_dummymode = menu('Do you want to use the Eyelink eyetracking in dummymode?', 'Yes', 'No');
 if p.ET_dummymode==2
-    p.ET_dummymode = 0; NoEyelink = 1;
-else
-    NoEyelink = 0;
+    p.ET_dummymode = 0;
 end
 
 SetParams;%set parameters of the experiment
 SetPTB;%set visualization parameters.
 
-
 % check how many choice stimulus of each type for this run
 number_face_stim = length(find(sequence.stim == 0));
 number_house_stim = length(find(sequence.stim == 1));
-Files = dir(fullfile([p.images_dir '\selected_faces_adults_similar_lum'],'*.jpg'));
+Files = dir(fullfile([p.images_dir '\selected_faces_adults_similar_lum_centered'],'*.jpg'));
 file_order_faces = randperm(size(Files, 1)); 
 p.choice_trials.file_order_faces = file_order_faces(1:number_face_stim);
 for numb_files=1:number_face_stim
     p.choice_trials.file_names_faces{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_faces(numb_files)).name);
 end
-Files = dir(fullfile([p.images_dir '\selected_houses_similar_lum'] ,'*.jpg'));
+Files = dir(fullfile([p.images_dir '\selected_houses_similar_lum_centered'] ,'*.jpg'));
 file_order_houses = randperm(size(Files, 1));
 p.choice_trials.file_order_houses = file_order_houses(1:number_house_stim);
 for numb_files=1:number_house_stim
@@ -94,10 +91,10 @@ p.subject = subject;
                     'Use a tecla M para resposta à direita com o indicador direito.\n\n'...
                     'Carregue numa tecla para avançar.\n'];
             else
-                 text = ['During the task, keep your eyes fixed on the fixation target,\n' ...
-                    'keep your head fixed on the support and do not speak.\n\n' ...
-                    'Use the Z key to answer left with your left index finger.\n' ...
-                    'Use the M key to answer right with your right index finger.\n\n' ...
+                 text = ['During the task, keep your eyes fixed on the fixation target,\n'...
+                    'keep your head fixed on the support and do not speak.\n\n'...
+                    'Use the Z key to answer left with your left index finger.\n'...
+                    'Use the M key to answer right with your right index finger.\n\n'...
                     'Press any key to continue.\n'];
             end
         else
@@ -114,11 +111,11 @@ p.subject = subject;
                     'Use o botão da direita para resposta à direita.\n\n'...
                     'Carregue num botão para avançar.\n'];
             else
-                text = ['During the task, keep your eyes fixed on the fixation target, \ n' ...
-                    'do not move your head or speak.\n\n' ...
-                    'Use the left button for the left answer. \ N' ...
-                    'Use the right button for the right answer. \ N \ n' ...
-                    'Press any button to continue. \ N'];
+                text = ['During the task, keep your eyes fixed on the fixation target,\n'...
+                    'do not move your head or speak.\n\n'...
+                    'Use the left button for the left answer.\n'...
+                    'Use the right button for the right answer.\n\n'...
+                    'Press any button to continue.\n'];
             end
         end
 
@@ -173,8 +170,10 @@ p.subject = subject;
             end
          end
         
-        draw_fix(p); %Screen('Flip',p.ptb.w);  
-        %WaitSecs(12); % baseline?
+        draw_fix(p); Screen('Flip',p.ptb.w);  
+        if fmri == 1
+            WaitSecs(12);
+        end
         [p, outcomes] = GlazeBlock(p,coloured_task);
         WaitSecs(10);
         fprintf('\n This block of trials lasted %3.2fs\n', GetSecs()-p.start_trials);
@@ -211,9 +210,9 @@ p.subject = subject;
         % 4.8 Check data save
 %         abort=false;
         p.start_time_task = datestr(now, 'dd-mmm-yyTHHMM'); %p.start_time = datestr(now, 'dd-mmm-yy-HH:MM:SS');
-
-        Screen('FillRect',p.ptb.w,p.stim.bg);
-        Screen('Flip',p.ptb.w);
+%         draw_fix(p);
+%         Screen('FillRect',p.ptb.w,p.stim.bg); 
+%         Screen('Flip',p.ptb.w);
         
         if fmri == 0
             KbQueueStop(p.ptb.device);
@@ -225,7 +224,7 @@ p.subject = subject;
             IOPort('Flush',p.LuminaHandle);
         end
         
-        Screen('Flip', p.ptb.w);
+%         Screen('Flip', p.ptb.w);
         Eyelink('StartRecording');
         WaitSecs(.01);
         Eyelink('Message', ['SUBJECT ', p.subject]);
@@ -241,7 +240,7 @@ p.subject = subject;
 %         start = start_trials+0.4;
         ActSampleOnset = GetSecs;
         count_faces = 0; count_houses = 0; % to determine which image to show
-        for trial  = 1:200 %size(p.sequence.stim, 2)
+        for trial  = 1:size(p.sequence.stim, 2)
             %Get the variables that Trial function needs.
             stim_id       = p.sequence.stim(trial); % nan = sample trial; car - stim_id = 0; house - stim_id = 1 
             type          = p.sequence.type(trial); % 0 = sample trial; 1 = choice trial
@@ -431,7 +430,7 @@ p.subject = subject;
         % Show one sample, such that black and white parts cancel.
         r_inner = p.stim.r_inner;
         o = p.stim.lumdiff;
-        p.sample_duration=p.stim.sample_duration;
+        p.sample_duration = p.stim.sample_duration;
         x_outer = r_inner*(2^.5 -1);
         r_outer = (r_inner + x_outer)*p.display.ppd;
         r_inner = r_inner*p.display.ppd;
@@ -462,7 +461,7 @@ p.subject = subject;
         Eyelink('message', sprintf('sample_onset %f', location));
         p = Log(p,ActSampleOnset, 'SAMPLE_ONSET', location);
         draw_fix(p);
-        TimeSampleOffset = Screen('Flip',p.ptb.w, ActSampleOnset+p.sample_duration, 0);     %<----- FLIP
+        TimeSampleOffset = Screen('Flip',p.ptb.w, ActSampleOnset + p.sample_duration, 0);     %<----- FLIP
         draw_fix(p);
     end
 
@@ -547,8 +546,8 @@ p.subject = subject;
             p.stim.lumdiff = 12; % luminance difference within sample fill and outline
         elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94  = ['DESKTOP-MKKOQUF']
 %             p.display.resolution = [1600 900]; %[1440 1080]; %[1920 1080]; Maria set to laptop 14Sep2019
-            p.display.dimension = [34.5 19.5]; %[52, 39.5]; %[52, 29.5]; Maria set to laptop 14Sep2019 - CHECK IN LAB AND CORRECT!
-            p.display.distance = [52, 50]; %[62, 59]; % 
+            p.display.dimension = [52.5, 39.5];
+            p.display.distance = [88, 88];
             p.stim.bg = [48 48 48];%[128, 128, 128];
             p.stim.fix_target = [64 64 64];
             p.stim.lumdiff = 12; % luminance difference within sample fill and outline
@@ -869,7 +868,7 @@ p.subject = subject;
 
 
     function StopEyelink(filename, path_edf)
-        if ~NoEyelink
+        if p.ET_dummymode == 0
             try
                 fprintf('Trying to stop the Eyelink system with StopEyelink\n');
                 Eyelink('StopRecording');
@@ -880,8 +879,9 @@ p.subject = subject;
 %                 display('...finished!')
                 % Shutdown Eyelink:
                 Eyelink('Shutdown');
+                disp('EyeLink stopped')
             catch
-                display('StopEyeLink routine didn''t really run well');
+                disp('StopEyeLink routine didn''t really run well')
             end
         end
     end
@@ -971,16 +971,16 @@ p.subject = subject;
         p.save_time = datestr(now, 'yyyymmddTHHMMSS');
         rst = randstr(5);
         p.random_string = rst;
-        if length(p.subject) < 7
-            p.edffile = [p.subject(3:end), 'S', num2str(p.session), 'R', num2str(p.run)]; %sprintf('S%d_B%d.edf', p.subject,  p.block); % Maria
-        else
-            p.edffile = ['S', num2str(p.session), 'R', num2str(p.run)];
-        end 
+%         if length(p.subject) < 7
+%             p.edffile = [p.subject(3:end), 'S', num2str(p.session), 'R', num2str(p.run)]; %sprintf('S%d_B%d.edf', p.subject,  p.block); % Maria
+%         else
+%             p.edffile = ['S', num2str(p.session), 'R', num2str(p.run)];
+%         end 
 %         path_edf = fullfile(p.path.baselocation, sprintf(p.subject,  p.block));
         path_edf = fullfile(p.path.baselocation, p.edffile);
         path_data = [p.path.baselocation, filesep p.subject, rst];
         %get the eyelink file back to this computer
-        StopEyelink(p.edffile,   path_edf);
+        StopEyelink(p.edffile, path_edf);
         %trim the log file and save
         p.out.log = p.out.log(1:p.out.event_count);
 
@@ -1081,18 +1081,18 @@ p.subject = subject;
                 'se aparecer\n', ... 
                 'uma casa, responda à esquerda.'];
             else
-                text3 = ['If just before the decision cue,\n', ...
+                text3 = ['If just before the decision prompt,\n', ...
                     'the top cloud is active\n', ...
-                    'and the decision cue is\n', ...
-                    'a house, press the right button,\n', ...
-                    'if the decision cue is\n', ...
-                    'a face, press the left button.'];
-                text4 = ['If just before the decision cue,\n', ...
+                    'and the image is a house,\n', ...
+                    'press the right button,\n', ...
+                    'if the image is a face,\n', ...
+                    'press the left button.'];
+                text4 = ['If just before the decision prompt,\n', ...
                     'the bottom cloud is active\n', ...
-                    'and the decision cue is\n', ...
-                    'a face, press the right button,\n', ...
-                    'if the decision cue is\n', ...
-                    'a house, press the left button.'];
+                    'and the image is a face, \n', ...
+                    'press the right button,\n', ...
+                    'if the image is a house,\n', ...
+                    'press the left button.'];
             end
         else
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Top, 0);
@@ -1111,18 +1111,18 @@ p.subject = subject;
                     'se aparecer\n', ... 
                     'uma cara, responda à esquerda.'];
             else
-                text3 = ['If just before the decision cue,\n', ...
+                text3 = ['If just before the decision prompt,\n', ...
                     'the top cloud is active\n', ...
-                    'and the decision cue is\n', .....
-                    'a face, press the right button,\n', ...
-                    'if the decision cue is\n', ...
-                    'a house, press the left button.'];
-                text4 = ['If just before the decision cue,\n', ...
+                    'and the image is a face,\n', .....
+                    'press the right button,\n', ...
+                    'if the image is a house,\n', ...
+                    'press the left button.'];
+                text4 = ['If just before the decision prompt,\n', ...
                     'the bottom cloud is active\n', ...
-                    'and the decision cue is\n', ...
-                    'a house, press the right button,\n', ...
-                    'if the decision cue is\n', ...
-                    'a face, press the left button.'];
+                    'and the image is a house,\n', ...
+                    'press the right button,\n', ...
+                    'if the image is a face,\n', ...
+                    'press the left button.'];
             end
         
         end

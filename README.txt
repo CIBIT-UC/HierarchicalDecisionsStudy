@@ -28,6 +28,12 @@ more detail information can be found at http://psychtoolbox.org/requirements/
 
 
 
+%% Running the experiment
+1 - Create stimuli sequences for each participant
+\HierarchicalDecisionsStudy\create_task_stim_sequences\task_sequences_hierarchical_decisions.m
 
+2 - Run training sequence to train participant
+\HierarchicalDecisionsStudy\training\hierarchical_decisions_task_training.m
 
-
+3 - Run experiment
+\HierarchicalDecisionsStudy\hierarchical_decisions_task.m

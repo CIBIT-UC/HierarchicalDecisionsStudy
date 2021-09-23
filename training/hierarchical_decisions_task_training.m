@@ -144,11 +144,11 @@ while 1
                 DrawFormattedText(p.ptb.w, text, 'center', p.ptb.CrossPosition_y+400, p.stim.white,[],[],[],2,[]);
                 % Here we load an image from file.
                 if strcmp(p.hostname, 'czc0211hsd') %gab72
-                    theImageLocation = [pwd, '\generative_processes_easy_SNR_1_25_gab92.jpg'];
+                    theImageLocation = [pwd, '\generative_processes_difficult_SNR_1_25_gab92.jpg'];
                 elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94 
-                    theImageLocation = [pwd, '\generative_processes_easy_SNR_1_25_lab94.jpg'];
+                    theImageLocation = [pwd, '\generative_processes_difficult_SNR_1_25_lab94.jpg'];
                 else
-                    theImageLocation = [pwd, '\generative_processes_easy_SNR_1_25.jpg'];
+                    theImageLocation = [pwd, '\generative_processes_difficult_SNR_1_25.jpg'];
                 end
                 
                 theImage_example = imread(theImageLocation);
@@ -288,8 +288,8 @@ end
         response = nan;
         RT = nan;
         draw_fix(p);
-        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+ 0.2 -p.ptb.slack, 0);  %<----- FLIP                    
-        WaitSecs(1.8);
+        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+ 0.5 -p.ptb.slack, 0);  %<----- FLIP                    
+        WaitSecs(1.5);
         response = nan;
         keycodes = nan; response_times = nan;
         [keycodes, response_times] = KbQueueDump(p);  
@@ -300,7 +300,7 @@ end
         % Show one sample, such that black and white parts cancel.
         r_inner = p.stim.r_inner;
         o = p.stim.lumdiff;
-        p.sample_duration=p.stim.sample_duration;
+        p.sample_duration = p.stim.sample_duration;
         x_outer = r_inner*(2^.5 -1);
         r_outer = (r_inner + x_outer)*p.display.ppd;
         r_inner = r_inner*p.display.ppd;
@@ -314,16 +314,16 @@ end
         rout = [cx-r_outer, location-r_outer+cy, cx+r_outer, location+r_outer+cy];
 %         draw_fix(p); 
         
-        % create a triangle to signal position of generative
-        % distribution
-        head   = [ cx-100, gener_side*p.display.ppd+cy ]; % coordinates of head
-        width  = 10;           % width of arrow head
-%         points = [ head-[width,0]         % left corner
-%                    head+[width,0]         % right corner
-%                    head+[0,width] ];      % vertex
-       points = [ head;        % vertex pointing right
-                   head-[width, width/2]         % top corner
-                   head+[-width,width/2] ];      % vertex
+%         % create a triangle to signal position of generative
+%         % distribution
+%         head   = [ cx-100, gener_side*p.display.ppd+cy ]; % coordinates of head
+%         width  = 10;           % width of arrow head
+% %         points = [ head-[width,0]         % left corner
+% %                    head+[width,0]         % right corner
+% %                    head+[0,width] ];      % vertex
+%        points = [ head;        % vertex pointing right
+%                    head-[width, width/2]         % top corner
+%                    head+[-width,width/2] ];      % vertex
   
         draw_fix(p);            
             
@@ -340,19 +340,18 @@ end
         end
         Screen('FillOval', p.ptb.w, colour-o, rout);
         Screen('FillOval', p.ptb.w, colour+o, rin);
-        if arrow == 1
-            Screen('FillPoly', p.ptb.w,[200,200,200], points); % arrow signaling which side the distribution comes from 
-        end
+%         if arrow == 1
+%             Screen('FillPoly', p.ptb.w,[200,200,200], points); % arrow signaling which side the distribution comes from 
+%         end
 
         ActSampleOnset  = Screen('Flip',p.ptb.w, SampleOnset, 0);      %<----- FLIP
 
         draw_fix(p);
-        if arrow == 1
-            Screen('FillPoly', p.ptb.w,[200,200,200], points); % arrow signaling which side the distribution comes from 
-        end
-        TimeSampleOffset = Screen('Flip',p.ptb.w,ActSampleOnset+p.sample_duration, 0);     %<----- FLIP
+%         if arrow == 1
+%             Screen('FillPoly', p.ptb.w,[200,200,200], points); % arrow signaling which side the distribution comes from 
+%         end
+        TimeSampleOffset = Screen('Flip', p.ptb.w, ActSampleOnset+p.sample_duration, 0);     %<----- FLIP
         draw_fix(p); 
-        %TimeSampleOffset = Screen('Flip',p.ptb.w,TimeSampleOffset+(.25), 0);
     end
 
 
@@ -402,12 +401,14 @@ end
 
 
     function draw_fix(p)
-
+% fixation target as suggested in Vision Research. Volume 76, 14 January 2013, Pages 31-42
+% What is the best fixation target? The effect of target shape on stability of fixational eye movements. 
+% L.Thalerab, A.C.SchützcM.A.GoodalebdK.R.Gegenfurtnerc
         colorOval = p.stim.fix_target; % color of the two circles [R G B]
         colorCross = p.stim.bg; % color of the Cross [R G B]
 
         d1 = 0.6; % diameter of outer circle (degrees)
-        d2 = 0.2; % diameter of inner circle (degrees)
+        d2 = 0.14; % diameter of inner circle (degrees)
 
         Screen('FillOval', p.ptb.w, colorOval, [p.ptb.CrossPosition_x-d1/2 * p.display.ppd, p.ptb.CrossPosition_y-d1/2 * p.display.ppd, p.ptb.CrossPosition_x+d1/2 * p.display.ppd, p.ptb.CrossPosition_y+d1/2 * p.display.ppd], d1 * p.display.ppd);
         Screen('DrawLine', p.ptb.w, colorCross, p.ptb.CrossPosition_x-d1/2 * p.display.ppd, p.ptb.CrossPosition_y, p.ptb.CrossPosition_x+d1/2 * p.display.ppd, p.ptb.CrossPosition_y, d2 * p.display.ppd);
@@ -430,8 +431,8 @@ end
             p.stim.fix_target = [144 144 144]; 
         elseif strcmp(p.hostname, 'DESKTOP-MKKOQUF') % Coimbra lab 94  = ['DESKTOP-MKKOQUF']
 %             p.display.resolution = [1600 900]; % CHECK
-            p.display.dimension = [34.5 19.5]; % CHECK
-            p.display.distance = [52, 50];% CHECK
+            p.display.dimension = [52.5, 39.5];
+            p.display.distance = [88, 88];
             p.stim.bg = [48 48 48];%[128, 128, 128];
             p.stim.fix_target = [64 64 64]; 
         elseif strcmp(p.hostname, 'cnd0151937') % Coimbra laptop
@@ -730,13 +731,13 @@ end
         img_size = 300;
         % Here we load in an image from file.
         % face image
-        theImageLocation = [p.images_dir, '\car-27.jpg'];
-        theImage_car = imread(theImageLocation);
+        theImageLocation = [p.images_dir, '\child-3.jpg'];
+        theImage_face = imread(theImageLocation);
         % Make the image into a texture
-        imageTexture_car = Screen('MakeTexture', p.ptb.w, theImage_car);
+        imageTexture_face = Screen('MakeTexture', p.ptb.w, theImage_face);
 
         % House Image
-        theImageLocation = [p.images_dir, '\house-38.jpg'];
+        theImageLocation = [p.images_dir, '\house-3.jpg'];
         theImage = imread(theImageLocation);
         % Make the image into a texture
         imageTexture_house = Screen('MakeTexture', p.ptb.w, theImage);
@@ -783,8 +784,8 @@ end
         NewImage_Left_Bottom = [p.ptb.width/2-img_size, p.ptb.height/2, p.ptb.width/2, p.ptb.height/2+img_size];
 
         if rule == 0
-            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Top, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Bottom, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Left_Top, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Right_Bottom, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Right_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Bottom, 0);
             if strcmp(language, 'PT')
@@ -792,10 +793,10 @@ end
                 'a nuvem de cima estiver ativa e aparecer.\n', ...
                 'uma casa, responda à direita,\n', ...
                 'se aparecer\n', ... 
-                'um carro, responda à esquerda.'];
+                'uma cara, responda à esquerda.'];
                 text4 = ['Se, na altura da resposta,\n', ...
                 'a nuvem de baixo estiver ativa e aparecer.\n', ...
-                'um carro, responda à direita,\n', ...
+                'uma cara, responda à direita,\n', ...
                 'se aparecer\n', ... 
                 'uma casa, responda à esquerda.'];
             else
@@ -804,35 +805,35 @@ end
                     'and the decision cue is\n', ...
                     'a house, press the right button,\n', ...
                     'if the decision cue is\n', ...
-                    'a car, press the left button.'];
+                    'a face, press the left button.'];
                 text4 = ['If just before the decision cue,\n', ...
                     'the bottom cloud is active\n', ...
                     'and the decision cue is\n', ...
-                    'a car, press the right button,\n', ...
+                    'a face, press the right button,\n', ...
                     'if the decision cue is\n', ...
                     'a house, press the left button.'];
             end
         else
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Left_Top, 0);
             Screen('DrawTexture', p.ptb.w, imageTexture_house, [], NewImage_Right_Bottom, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Right_Top, 0);
-            Screen('DrawTexture', p.ptb.w, imageTexture_car, [], NewImage_Left_Bottom, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Right_Top, 0);
+            Screen('DrawTexture', p.ptb.w, imageTexture_face, [], NewImage_Left_Bottom, 0);
             if strcmp(language, 'PT')
                 text3 = ['Se, na altura da resposta,\n', ...
                 'a nuvem de cima estiver ativa e aparecer.\n', ...
-                    'um carro, responda à direita,\n', ...
+                    'uma cara, responda à direita,\n', ...
                     'se aparecer\n', ... 
                     'uma casa, responda à esquerda.'];
                 text4 = ['Se, na altura da resposta,\n', ...
                 'a nuvem de baixo estiver ativa e aparecer.\n', ...
                     'uma casa, responda à direita,\n', ...
                     'se aparecer\n', ... 
-                    'um carro, responda à esquerda.'];
+                    'uma cara, responda à esquerda.'];
             else
                 text3 = ['If just before the decision cue,\n', ...
                     'the top cloud is active\n', ...
                     'and the decision cue is\n', .....
-                    'a car, press the right button,\n', ...
+                    'a face, press the right button,\n', ...
                     'if the decision cue is\n', ...
                     'a house, press the left button.'];
                 text4 = ['If just before the decision cue,\n', ...
@@ -840,7 +841,7 @@ end
                     'and the decision cue is\n', ...
                     'a house, press the right button,\n', ...
                     'if the decision cue is\n', ...
-                    'a car, press the left button.'];
+                    'a face, press the left button.'];
             end
         end
        
@@ -1202,7 +1203,7 @@ end
         if strcmp(language, 'PT')
             text = ['Nesta parte do treino, as respostas terão em conta não só qual a nuvem ativa,\n'...
                         'mas também qual a imagem que aparece a indicar que tem de tomar uma decisão.\n\n'...
-                        'Essa imagem pode ser um carro ou uma casa.\n\n'...
+                        'Essa imagem pode ser uma cara ou uma casa.\n\n'...
                         'Terá de responder de acordo com a regra que será mostrada a seguir.\n\n'...
                         'Use a tecla Z para resposta à esquerda com o indicador esquerdo.\n'...
                         'Use a tecla M para resposta à direita com o indicador direito.\n\n'...
@@ -1210,7 +1211,7 @@ end
         else
             text = ['In this part of the training, the answers will take into account not only which cloud is active,\n' ...
                         'but also which image appears indicating that you have to make a decision.\n\n' ...
-                        'This image can be a car or a house.\n\n' ...
+                        'This image can be a face or a house.\n\n' ...
                         'You will have to answer according to the rule that will be shown next.\n\n' ...
                         'Use the Z key to answer on the left with the left index finger.\n'...
                         'Use the M key to answer on the right with the right index finger.\n\n' ...
@@ -1282,16 +1283,16 @@ end
 
                 %% image files to load
                 % dir with face or house images files
-                face_dir = [p.images_dir, '\selected_cars_similar_lum'];
-                house_dir = [p.images_dir, '\selected_houses_similar_lum2cars'];
+                face_dir = [p.images_dir, '\selected_faces_adults_similar_lum_centered'];
+                house_dir = [p.images_dir, '\selected_houses_similar_lum_centered'];
                 % check how many choice stimulus of each type for this run
-                number_car_stim = length(find(seq.stim == 0));
+                number_face_stim = length(find(seq.stim == 0));
                 number_house_stim = length(find(seq.stim == 1));
                 Files = dir(fullfile(face_dir,'*.jpg'));
-                file_order_cars = randperm(size(Files, 1)); 
-                p.choice_trials.file_order_cars = file_order_cars(1:number_car_stim);
-                for numb_files=1:number_car_stim
-                    p.choice_trials.file_names_cars{numb_files, 1} = fullfile(Files(file_order_cars(numb_files)).folder, Files(file_order_cars(numb_files)).name);
+                file_order_faces = randperm(size(Files, 1)); 
+                p.choice_trials.file_order_faces = file_order_faces(1:number_face_stim);
+                for numb_files=1:number_face_stim
+                    p.choice_trials.file_names_faces{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_faces(numb_files)).name);
                 end
                 Files = dir(fullfile(house_dir,'*.jpg'));
                 file_order_houses = randperm(size(Files, 1));
@@ -1302,7 +1303,7 @@ end
 
                 draw_fix(p);
                 correct = 0; trial_number = 0;
-                count_cars = 0; count_houses = 0; % to determine which image to show
+                count_faces = 0; count_houses = 0; % to determine which image to show
                 ActSampleOnset = GetSecs;
                 for trial  = 1:number_of_trials%size(p.sequence.stim, 2)
                     %Get the variables that Trial function needs.
@@ -1318,8 +1319,8 @@ end
                     elseif type == 1 % Choice trial.
                         trial_number = trial_number+1;
                         if stim_id == 0
-                            count_cars = count_cars+1;
-                            theImageLocation = p.choice_trials.file_names_cars{count_cars};
+                            count_faces = count_faces+1;
+                            theImageLocation = p.choice_trials.file_names_faces{count_faces};
                         elseif stim_id == 1
                             count_houses = count_houses+1;
                             theImageLocation = p.choice_trials.file_names_houses{count_houses};
