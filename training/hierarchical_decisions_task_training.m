@@ -296,7 +296,7 @@ end
    end
 
 
-    function [TimeSampleOffset, p] = show_one_sample(p, SampleOnset, location, gener_side, coloured_task, arrow)
+    function [ActSampleOnset, p] = show_one_sample(p, SampleOnset, location, gener_side, coloured_task)
         % Show one sample, such that black and white parts cancel.
         r_inner = p.stim.r_inner;
         o = p.stim.lumdiff;
@@ -312,18 +312,6 @@ end
         % vertical positioning of dots % left, top, right, bottom
         rin = [cx-r_inner, location-r_inner+cy, cx+r_inner, location+r_inner+cy];
         rout = [cx-r_outer, location-r_outer+cy, cx+r_outer, location+r_outer+cy];
-%         draw_fix(p); 
-        
-%         % create a triangle to signal position of generative
-%         % distribution
-%         head   = [ cx-100, gener_side*p.display.ppd+cy ]; % coordinates of head
-%         width  = 10;           % width of arrow head
-% %         points = [ head-[width,0]         % left corner
-% %                    head+[width,0]         % right corner
-% %                    head+[0,width] ];      % vertex
-%        points = [ head;        % vertex pointing right
-%                    head-[width, width/2]         % top corner
-%                    head+[-width,width/2] ];      % vertex
   
         draw_fix(p);            
             
@@ -340,16 +328,9 @@ end
         end
         Screen('FillOval', p.ptb.w, colour-o, rout);
         Screen('FillOval', p.ptb.w, colour+o, rin);
-%         if arrow == 1
-%             Screen('FillPoly', p.ptb.w,[200,200,200], points); % arrow signaling which side the distribution comes from 
-%         end
 
         ActSampleOnset  = Screen('Flip',p.ptb.w, SampleOnset, 0);      %<----- FLIP
-
         draw_fix(p);
-%         if arrow == 1
-%             Screen('FillPoly', p.ptb.w,[200,200,200], points); % arrow signaling which side the distribution comes from 
-%         end
         TimeSampleOffset = Screen('Flip', p.ptb.w, ActSampleOnset+p.sample_duration, 0);     %<----- FLIP
         draw_fix(p); 
     end
@@ -364,39 +345,6 @@ end
         [keycode, secs] = KbQueueDump(p);%this contains both the pulses and keypresses.
         %log everything but "pulse keys" as pulses, not as keypresses.
 %         pulses          = (keycode == KbName(p.keys.pulse));
-    end
-
-
-    function draw_stimulus(p, stim_id, phase)
-        if nargin==2
-            phase = 0;
-        end
-        angle = 90*stim_id;
-        df = p.ptb.rect(3) -  p.ptb.rect(4);
-        rect = [df/2., 0, p.ptb.rect(4)+df/2, p.ptb.rect(4)];
-        draw_fix(p);
-        Screen('DrawTexture', p.ptb.w, p.ptb.gabortex, [], rect, ...
-            angle, [], [], [], [], [], [phase, p.stim.sf, 150, 100, 1, 0, 0, 0]);
-        radius = 2.5;
-        oc = [p.ptb.midpoint(1)-p.display.ppd*radius, p.ptb.midpoint(2)-p.display.ppd*radius,...
-            p.ptb.midpoint(1)+p.display.ppd*radius, p.ptb.midpoint(2)+p.display.ppd*radius];
-        Screen('FillOval', p.ptb.w, p.stim.bg, oc);
-        %draw also the fixation cross
-        Screen('FillRect',  p.ptb.w, p.stim.bg , p.FixCross');
-        Screen('DrawingFinished',p.ptb.w,0);
-    end
-
-    function draw_fix_bg(p, color)
-        if nargin==1
-            color=[64 64 64];%[255, 255, 255];
-
-        end
-        cx = mean(p.FixCross(2,[1, 3]));
-        cy = mean(p.FixCross(2,[2, 4]));
-        r = 0.25*p.display.ppd;
-        rr = [cx-r, cy-r, cx+r, cy+r];
-        Screen('FillOval', p.ptb.w, p.stim.bg , rr);
-        Screen('FillRect',  p.ptb.w, color, p.FixCross');
     end
 
 
@@ -1046,8 +994,7 @@ end
             gener_side    = seq.generating_side(trial);
             OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
             % Show a single sample
-            arrow = 0;
-            [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+            [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task);
          end
 
          WaitSecs(1);
@@ -1090,7 +1037,7 @@ end
             gener_side    = seq.generating_side(trial);
             OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
             % Show a single sample
-            [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+            [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task);
          end
     end
 
@@ -1115,8 +1062,7 @@ end
                 OnsetTime     = ActSampleOnset + 0.4; % ISI = 400 ms
 
                 if type == 0 % Show a single sample
-                    arrow = 0;
-                    [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+                    [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task);
                 elseif type == 1 % Choice trial.
                     trial_number = trial_number+1;
                     [p, response] = visual_cue_trial(p);
@@ -1199,7 +1145,6 @@ end
     %% Hierarchical decisions training phase
     % PHASE 5 and 6
     function p = hierarchical_decisions_training_phase(p, block, number_of_trials)
-        arrow = 0;
         if strcmp(language, 'PT')
             text = ['Nesta parte do treino, as respostas terão em conta não só qual a nuvem ativa,\n'...
                         'mas também qual a imagem que aparece a indicar que tem de tomar uma decisão.\n\n'...
@@ -1315,7 +1260,7 @@ end
 
                     if type == 0
                         % Show a single sample
-                        [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task, arrow);
+                        [ActSampleOnset, p] = show_one_sample(p, OnsetTime, location, gener_side, coloured_task);
                     elseif type == 1 % Choice trial.
                         trial_number = trial_number+1;
                         if stim_id == 0
