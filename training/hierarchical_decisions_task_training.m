@@ -278,7 +278,7 @@ end
 
         % Flip to the screen
         % STIMULUS ONSET
-        TimeStimOnset  = Screen('Flip', p.ptb.w, ChoiceStimOnset, 0);    
+        TimeStimOnset  = Screen('Flip', p.ptb.w, ChoiceStimOnset - p.ptb.slack, 0);    
         start_rt_counter  = TimeStimOnset;
         
         % Check for key events
@@ -288,7 +288,7 @@ end
         response = nan;
         RT = nan;
         draw_fix(p);
-        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+ 0.5 -p.ptb.slack, 0);  %<----- FLIP                    
+        TimeStimOffset  = Screen('Flip', p.ptb.w, TimeStimOnset+ 0.5 - p.ptb.slack, 0);  %<----- FLIP                    
         WaitSecs(1.5);
         response = nan;
         keycodes = nan; response_times = nan;
@@ -329,9 +329,9 @@ end
         Screen('FillOval', p.ptb.w, colour-o, rout);
         Screen('FillOval', p.ptb.w, colour+o, rin);
 
-        ActSampleOnset  = Screen('Flip',p.ptb.w, SampleOnset, 0);      %<----- FLIP
+        ActSampleOnset  = Screen('Flip',p.ptb.w, SampleOnset - p.ptb.slack, 0);      %<----- FLIP
         draw_fix(p);
-        TimeSampleOffset = Screen('Flip', p.ptb.w, ActSampleOnset+p.sample_duration, 0);     %<----- FLIP
+        TimeSampleOffset = Screen('Flip', p.ptb.w, ActSampleOnset + p.sample_duration - p.ptb.slack, 0);     %<----- FLIP
         draw_fix(p); 
     end
 
