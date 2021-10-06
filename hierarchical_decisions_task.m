@@ -1,77 +1,77 @@
 function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchical_decision, coloured_task, language)
-% subject = subject code (string)
-% session = session number: 1 and 2 outside scanner; 3 and 4 inside scanner
-% run = up to 5 runs per session - ~10min per run
-% rule_hierarchical_decision = 0 or 1
-% coloured_task = 0 (grey samples) or 1 (coloured samples according to source)
-% language = 'PT' or 'EN'
-% press 'q' on choice trials to quit
+    % subject = subject code (string)
+    % session = session number: 1 and 2 outside scanner; 3 and 4 inside scanner
+    % run = up to 5 runs per session - ~10min per run
+    % rule_hierarchical_decision = 0 or 1
+    % coloured_task = 0 (grey samples) or 1 (coloured samples according to source)
+    % language = 'PT' or 'EN'
+    % press 'q' on choice trials to quit
 
-% Fixation target used was adapted from:
-% Vision Res. 2013 Jan 14;76:31-42.
-% doi: 10.1016/j.visres.2012.10.012. Epub 2012 Oct 23.
-% What is the best fixation target? The effect of target shape on stability of fixational eye movements
-% L Thaler  1 , A C Schütz, M A Goodale, K R Gegenfurtner
+    % Fixation target used was adapted from:
+    % Vision Res. 2013 Jan 14;76:31-42.
+    % doi: 10.1016/j.visres.2012.10.012. Epub 2012 Oct 23.
+    % What is the best fixation target? The effect of target shape on stability of fixational eye movements
+    % L Thaler  1 , A C Schütz, M A Goodale, K R Gegenfurtner
 
 
-% NoEyelink = 0; %is Eyelink wanted?
-debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
-small_window = 0; % Open a small window only
-% close ports - scanner
-IOPort('CloseAll');
+    % NoEyelink = 0; %is Eyelink wanted?
+    debug   = 0; % debug mode => 1: transparent window enabling viewing the background.
+    small_window = 0; % Open a small window only
+    % close ports - scanner
+    IOPort('CloseAll');
 
-%% >>>>> Set up a lot of stuff
-rng('shuffle'); % ensure random is always different
-% Load stimulus sequence
-load_dir = [pwd '\exp_data' filesep subject];
-sequence = load([load_dir filesep 'task_sequences']);
+    %% >>>>> Set up a lot of stuff
+    rng('shuffle'); % ensure random is always different
+    % Load stimulus sequence
+    load_dir = [pwd '\exp_data' filesep subject];
+    sequence = load([load_dir filesep 'task_sequences']);
 
-if subject > 0
-    sequence = sequence.task_sequences{session}{run};
-    fmri = sequence.fmri; % if false skip waiting for pulses.
-end
+    if subject > 0
+        sequence = sequence.task_sequences{session}{run};
+        fmri = sequence.fmri; % if false skip waiting for pulses.
+    end
 
-commandwindow; %focus on the command window, so that output is not written on the editor
-% %clear everything
-% clear mex global functions;%clear all before we start.
+    commandwindow; %focus on the command window, so that output is not written on the editor
+    % %clear everything
+    % clear mex global functions;%clear all before we start.
 
-GetSecs;
-WaitSecs(0.001); 
+    GetSecs;
+    WaitSecs(0.001); 
 
-el        = []; % eye-tracker variable
-p         = []; % parameter structure that contains all info about the experiment.
+    el        = []; % eye-tracker variable
+    p         = []; % parameter structure that contains all info about the experiment.
 
-% -- EYETRACKING
-% Do you want to use the Eyelink eyetracking in dummymode (1) or not (2) ?
-p.ET_dummymode = menu('Do you want to use the Eyelink eyetracking in dummymode?', 'Yes', 'No');
-if p.ET_dummymode==2
-    p.ET_dummymode = 0;
-end
+    % -- EYETRACKING
+    % Do you want to use the Eyelink eyetracking in dummymode (1) or not (2) ?
+    p.ET_dummymode = menu('Do you want to use the Eyelink eyetracking in dummymode?', 'Yes', 'No');
+    if p.ET_dummymode==2
+        p.ET_dummymode = 0;
+    end
 
-SetParams;%set parameters of the experiment
-SetPTB;%set visualization parameters.
+    SetParams;%set parameters of the experiment
+    SetPTB;%set visualization parameters.
 
-% check how many choice stimulus of each type for this run
-number_face_stim = length(find(sequence.stim == 0));
-number_house_stim = length(find(sequence.stim == 1));
-Files = dir(fullfile([p.images_dir '\selected_faces_adults_similar_lum_centered'],'*.jpg'));
-file_order_faces = randperm(size(Files, 1)); 
-p.choice_trials.file_order_faces = file_order_faces(1:number_face_stim);
-for numb_files=1:number_face_stim
-    p.choice_trials.file_names_faces{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_faces(numb_files)).name);
-end
-Files = dir(fullfile([p.images_dir '\selected_houses_similar_lum_centered'] ,'*.jpg'));
-file_order_houses = randperm(size(Files, 1));
-p.choice_trials.file_order_houses = file_order_houses(1:number_house_stim);
-for numb_files=1:number_house_stim
-    p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_houses(numb_files)).name);
-end
+    % check how many choice stimulus of each type for this run
+    number_face_stim = length(find(sequence.stim == 0));
+    number_house_stim = length(find(sequence.stim == 1));
+    Files = dir(fullfile([p.images_dir '\selected_faces_adults_similar_lum_centered'],'*.jpg'));
+    file_order_faces = randperm(size(Files, 1)); 
+    p.choice_trials.file_order_faces = file_order_faces(1:number_face_stim);
+    for numb_files=1:number_face_stim
+        p.choice_trials.file_names_faces{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_faces(numb_files)).name);
+    end
+    Files = dir(fullfile([p.images_dir '\selected_houses_similar_lum_centered'] ,'*.jpg'));
+    file_order_houses = randperm(size(Files, 1));
+    p.choice_trials.file_order_houses = file_order_houses(1:number_house_stim);
+    for numb_files=1:number_house_stim
+        p.choice_trials.file_names_houses{numb_files, 1} = fullfile(Files(file_order_faces(numb_files)).folder, Files(file_order_houses(numb_files)).name);
+    end
 
-p.rule_hierarchical_decision = rule_hierarchical_decision; % to counterbalance across participants which rule in first run, can be 0 or 1
-p.session = session; p.run = run;
-p.subject = subject;
+    p.rule_hierarchical_decision = rule_hierarchical_decision; % to counterbalance across participants which rule in first run, can be 0 or 1
+    p.session = session; p.run = run;
+    p.subject = subject;
 
-% calibrated = false;
+    % calibrated = false;
 
 %% >>>>>>> Experiment starts.
 %try
@@ -100,10 +100,7 @@ p.subject = subject;
         else
             p.LuminaHandle = IOPort('OpenSerialPort','COM4'); 
             IOPort('Flush',p.LuminaHandle); 
-            % to listen to keyboard as well
-            KbQueueStop(p.ptb.device);
-            KbQueueRelease(p.ptb.device);
-            KbQueueCreate(p.ptb.device);
+            
             if strcmp(language, 'PT')
                 text = ['Durante a tarefa, mantenha o olhar fixo no alvo de fixação,\n'...
                     'não mexa a cabeça e não fale.\n\n'...
@@ -171,8 +168,13 @@ p.subject = subject;
          end
         
         draw_fix(p); Screen('Flip',p.ptb.w);  
+        Eyelink('StartRecording');
+        WaitSecs(.01);
+        Eyelink('Message', ['SUBJECT ', p.subject]);
+        p = Log(p, GetSecs, 'SUBJECT', p.subject);
+        WaitSecs(1);
         if fmri == 1
-            WaitSecs(12);
+            WaitSecs(11);
         end
         [p, outcomes] = GlazeBlock(p,coloured_task);
         WaitSecs(10);
@@ -192,10 +194,10 @@ p.subject = subject;
         KbWait(p.ptb.device, 2, GetSecs()+15);
         
     end
-    p = dump_keys(p);
 
     %stop the queue
     if fmri == 0
+        p = dump_keys(p);
         KbQueueStop(p.ptb.device);
         KbQueueRelease(p.ptb.device);
     end
@@ -225,14 +227,14 @@ p.subject = subject;
         end
         
 %         Screen('Flip', p.ptb.w);
-        Eyelink('StartRecording');
-        WaitSecs(.01);
-        Eyelink('Message', ['SUBJECT ', p.subject]);
-        p = Log(p, GetSecs, 'START_GLAZE', nan);
-        p = Log(p, GetSecs, 'SUBJECT', p.subject);
+%         Eyelink('StartRecording');
+%         WaitSecs(.01);
+%         Eyelink('Message', ['SUBJECT ', p.subject]);
+%         p = Log(p, GetSecs, 'START_GLAZE', nan);
+%         p = Log(p, GetSecs, 'SUBJECT', p.subject);
           
-        draw_fix(p);
-        WaitSecs(1);
+%         draw_fix(p);
+%         WaitSecs(1);
 
 %         StartGlazeEyelinkRecording(p.block, p.phase_variable);
         outcomes = []; % response accuracy
@@ -298,6 +300,7 @@ p.subject = subject;
                            keys = num2str(keycodes(iii));
                         end
                         p = Log(p, ReactionTime, 'BUTTON_PRESS', keys); % save info for all responses so we know if it was corrected
+                        p = Log(p, response_times(iii), 'RESPONSE_TIME', keys); % save info for all responses so we know if it was corrected
                         % in scanner left responses = 49 or 50; right responses 51 or 52
                         if iii == length(keycodes) % what counts for accuracy is last response
                             if gener_side > 0 && stim_id == 0 % bottom and cars
@@ -355,9 +358,9 @@ p.subject = subject;
 
         abort = 0;
         % load image of face or house - face - stim_id = 0; house - stim_id = 1 
-        % Here we load in an image from file.
+        % Here we load in an image from file
         theImage = imread(theImageLocation);
-        %    Make the image into a texture
+        % Make the image into a texture
         imageTexture = Screen('MakeTexture', p.ptb.w, theImage);
         % Draw the gaussian apertures  into our full screen aperture mask
         Screen('DrawTextures', p.gaussian_aperture.fullWindowMask, p.gaussian_aperture.masktex, [], p.gaussian_aperture.dstRects);
@@ -378,7 +381,7 @@ p.subject = subject;
         
         % Flip to the screen
         % STIMULUS ONSET
-        TimeStimOnset  = Screen('Flip', p.ptb.w, ChoiceStimOnset, 0);    
+        TimeStimOnset  = Screen('Flip', p.ptb.w, ChoiceStimOnset - p.ptb.slack, 0);    
 %         start_rt_counter  = TimeStimOnset;
         p = Log(p,TimeStimOnset, 'CHOICE_TRIAL_ONSET', stim_id);
         Eyelink('Message', sprintf('CHOICE_TRIAL_ONSET %i', stim_id));
@@ -458,11 +461,11 @@ p.subject = subject;
         Screen('FillOval', p.ptb.w, colour-o, rout);
         Screen('FillOval', p.ptb.w, colour+o, rin);
 
-        ActSampleOnset  = Screen('Flip',p.ptb.w, SampleOnset, 0);      %<----- FLIP
+        ActSampleOnset  = Screen('Flip',p.ptb.w, SampleOnset - p.ptb.slack, 0);      %<----- FLIP
         Eyelink('message', sprintf('sample_onset %f', location));
         p = Log(p,ActSampleOnset, 'SAMPLE_ONSET', location);
         draw_fix(p);
-        TimeSampleOffset = Screen('Flip',p.ptb.w, ActSampleOnset + p.sample_duration, 0);     %<----- FLIP
+        TimeSampleOffset = Screen('Flip',p.ptb.w, ActSampleOnset + p.sample_duration - p.ptb.slack, 0);     %<----- FLIP
         draw_fix(p);
     end
 
@@ -593,10 +596,21 @@ p.subject = subject;
             case 0
                 p.responseDevice = 'keyboard';
                 p.syncboxEnabled = 0;
-%                 Screen('FillRect', p.ptb.w, p.stim.bg);
-%                 DrawFormattedText(p.ptb.w, 'Ready...', 'center', 'center', p.stim.white,[],[],[],2,[]);
-%                 Screen('Flip',p.ptb.w);
-%                 KbWait
+                %% keys to be used during the experiment:
+
+                KbName('UnifyKeyNames');
+                p.keys.confirm           = '4$';%
+                p.keys.answer_left       = 'z';
+                p.keys.answer_right      = 'm';
+                p.keys.el_calib          = 'v';
+                p.keys.el_valid          = 'c';
+                p.keys.escape            = 'ESCAPE';
+                p.keys.enter             = 'return';
+                p.keys.quit              = 'q';
+                p.keys.list = {p.keys.confirm,...
+                    p.keys.answer_left,...
+                    p.keys.answer_right,...
+                    p.keys.el_calib, p.keys.el_valid, p.keys.enter};
             case 1
                 p.responseDevice = 'lumina';
                 p.syncboxEnabled=1;
@@ -604,34 +618,7 @@ p.subject = subject;
 %                 IOPort('Flush',p.LuminaHandle);     
         end
         
-        %% keys to be used during the experiment: - CHECK FOR MRI RESPONSE BOX - 
-        %This part is highly specific for your system and recording setup,
-        %please enter the correct key identifiers. You can get this information calling the
-        %KbName function and replacing the code below for the key below.
-        %1, 6 ==> Right
-        %2, 7 ==> Left
-        %3, 8 ==> Down
-        %4, 9 ==> Up (confirm)
-        %5    ==> Pulse from the scanner
 
-        KbName('UnifyKeyNames');
-        p.keys.confirm                 = '4$';%
-%         p.keys.answer_a                = {'1!', '2@', '3#', '4$'};
-%         p.keys.answer_a_train          = 'z';
-        p.keys.answer_left       = 'z';
-%         p.keys.answer_b                = {'6^', '7&', '8*', '9('};
-%         p.keys.answer_b_train          = 'm';
-        p.keys.answer_right          = 'm';
-%         p.keys.pulse                   = '5%';
-        p.keys.el_calib                = 'v';
-        p.keys.el_valid                = 'c';
-        p.keys.escape                  = 'ESCAPE';
-        p.keys.enter                   = 'return';
-        p.keys.quit                    = 'q';
-        p.keys.list = {p.keys.confirm,...
-            p.keys.answer_left,...
-            p.keys.answer_right,...
-            p.keys.el_calib, p.keys.el_valid, p.keys.enter};
         %% %%%%%%%%%%%%%%%%%%%%%%%%%
 %         %Communication business
 %         %parallel port
@@ -725,13 +712,13 @@ p.subject = subject;
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%Prepare the keypress queue listening.
 
-        %get all the required keys in a vector
-        p.ptb.keysOfInterest = [];
-        for i = fields(p.keys)'
-            p.ptb.keysOfInterest = [p.ptb.keysOfInterest KbName(p.keys.(i{1}))];
-        end
-%         RestrictKeysForKbCheck(p.ptb.keysOfInterest);
-        KbQueueCreate(p.ptb.device);%, p.ptb.keysOfInterest);%default device.
+%         %get all the required keys in a vector
+%         p.ptb.keysOfInterest = [];
+%         for i = fields(p.keys)'
+%             p.ptb.keysOfInterest = [p.ptb.keysOfInterest KbName(p.keys.(i{1}))];
+%         end
+% %         RestrictKeysForKbCheck(p.ptb.keysOfInterest);
+%         KbQueueCreate(p.ptb.device);%, p.ptb.keysOfInterest);%default device.
      
         Screen('TextSize', p.ptb.w,  20);
         Screen('TextFont', p.ptb.w, 'Courier');
@@ -899,10 +886,10 @@ p.subject = subject;
             %show the cursor
             ShowCursor(p.ptb.screenNumber);
         end
-        %
+
         commandwindow;
-        KbQueueStop(p.ptb.device);
-        KbQueueRelease(p.ptb.device);
+%         KbQueueStop(p.ptb.device);
+%         KbQueueRelease(p.ptb.device);
     end
 
 
