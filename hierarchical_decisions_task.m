@@ -157,7 +157,7 @@ p.subject = subject;
         
          if p.syncboxEnabled %Catarina defined waiting MRI 
             Screen('FillRect', p.ptb.w, p.stim.bg );
-            DrawFormattedText(p.ptb.w, 'Waiting for MRI to start...', 'center', 'center', p.stim.white,[],[],[],2,[]);
+            DrawFormattedText(p.ptb.w, 'Por favor, aguarde...', 'center', 'center', p.stim.white,[],[],[],2,[]);
             Screen('Flip',p.ptb.w);
 
             SynchBox = IOPort('OpenSerialPort', 'COM5', 'BaudRate=57600 DataBits=8 Parity=None StopBits=1 FlowControl=None');
@@ -927,11 +927,12 @@ p.subject = subject;
 
 
     function p = Log(p, ptb_time, event_type, event_info)
-        for iii = 1:length(ptb_time)
+%         for iii = 1:length(ptb_time)
             p.out.event_count                = p.out.event_count + 1;
-           p.out.log{p.out.event_count}   = {ptb_time(iii) event_type event_info(iii)};
+            p.out.log{p.out.event_count}   = {ptb_time event_type event_info};
+%            p.out.log{p.out.event_count}   = {ptb_time(iii) event_type event_info(iii)};
             %fprintf('LOG: %2.2f, %i, %s, %s, %i \n', ptb_time, event_type, event_info, phase_variable, block)
-        end
+%         end
 
     end
 
