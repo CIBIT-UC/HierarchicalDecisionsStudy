@@ -23,7 +23,7 @@ SetPTB;% set visualization parameters.
 
 % % text properties
 Screen('TextSize', p.ptb.w,  20);
-Screen('TextFont', p.ptb.w, 'Courier');
+Screen('TextFont', p.ptb.w, 'Arial');
 Screen('TextStyle', p.ptb.w, 1);
 
 %% >>>>>>> Experiment starts.
@@ -408,7 +408,7 @@ end
 
         %% %%%%%%%%%%%%%%%%%%%%%%%%%
         p.stim.white                = get_color('white');
-        p.text.fontname                = 'Courier';
+        p.text.fontname                = 'Arial';
         p.text.fontsize                = 20;
         p.text.fixsize                 = 60;
 

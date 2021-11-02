@@ -200,7 +200,7 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
         p = dump_keys(p);
         KbQueueStop(p.ptb.device);
         KbQueueRelease(p.ptb.device);
-    end
+    end 
     cleanup(p);
     % lasterr
 
@@ -500,27 +500,6 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
     end
 
 
-
-%     function text = RewardText(reward_rate)
-%         text = [sprintf('No último bloco acertou %2.0f%% das respostas.\n', 100*reward_rate)];
-%             %sprintf('Isso corresponde %1.2f EUR!\n', earned_money)...
-%             %sprintf('No total, ganhou um bónus de %1.2f EUR!', total_money)];
-%     end
-
-
-    function ShowText(text, onset)
-
-        Screen('FillRect',p.ptb.w,p.var.current_bg);
-        DrawFormattedText(p.ptb.w, text, 'center', 'center', p.stim.white,[],[],[],2,[]);
-        if nargin==1
-            Screen('Flip',p.ptb.w);
-        else
-            Screen('Flip',p.ptb.w, onset);
-        end
-        %show the messages at the experimenter screen
-    end
-
-
      function SetParams
 %         %mrt business
 %         p.mrt.dummy_scan              = 5; %this will wait until the 6th image is acquired.
@@ -585,7 +564,7 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
         %% %%%%%%%%%%%%%%%%%%%%%%%%%
         
         p.stim.white                = get_color('white');
-        p.text.fontname                = 'Courier';
+        p.text.fontname                = 'Arial';%'Courier';
         p.text.fontsize                = 20;
         p.text.fixsize                 = 60;
         
@@ -721,7 +700,7 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
 %         KbQueueCreate(p.ptb.device);%, p.ptb.keysOfInterest);%default device.
      
         Screen('TextSize', p.ptb.w,  20);
-        Screen('TextFont', p.ptb.w, 'Courier');
+        Screen('TextFont', p.ptb.w, 'Arial');
         Screen('TextStyle', p.ptb.w, 1);
         
         
@@ -799,7 +778,7 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
         el.displayCalResults        = 1;
         el.eyeimgsize               = 50;
         el.waitformodereadytime     = 25;%ms
-        el.msgfont                  = 'Times New Roman';
+        el.msgfont                  = 'Arial';%'Times New Roman';
         el.cal_target_beep          =  [0 0 0];%[1250 0.6 0.05];
         %shut all sounds off
         el.drift_correction_targetp.ptb.wid_beep = [0 0 0];
@@ -825,7 +804,10 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
         end     
         res = Eyelink('Openfile', p.edffile); %#ok<NASGU>
 
-        Eyelink('command', 'screen_pixel_coords = %ld %ld %ld %ld', 0, 0, p.ptb.width-1, p.ptb.height-1);
+%         Eyelink('command', 'screen_pixel_coords = %ld %ld %ld %ld', 0, 0, p.ptb.width-1, p.ptb.height-1);
+        
+        Eyelink('command', 'screen_pixel_coords = %ld %ld %ld %ld', 0, 0, p.ptb.width/2-1, p.ptb.height/2-1);
+        
         Eyelink('message', 'DISPLAY_COORDS %ld %ld %ld %ld', 0, 0, p.ptb.width-1, p.ptb.height-1);
 
         pw = p.display.dimension(1);
@@ -835,6 +817,8 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
             ,  floor(10*ph/2)... %half height
             ,  floor(10*pw/2)... %half width
             , -floor(10*ph/2));   %half height %rv 2
+        
+        
         Eyelink('command', phys_coord);
 
         Eyelink('command', 'screen_distance = %ld %ld', ...
@@ -842,7 +826,33 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
 
         % set calibration type.
         Eyelink('command','auto_calibration_messages = YES');
-        Eyelink('command', 'calibration_type = HV13');
+            % set calibration type.
+        Eyelink('command', 'calibration_type = HV9');
+        % you must send this command with value NO for custom calibration
+        % you must also reset it to YES for subsequent experiments
+        Eyelink('command', 'generate_default_targets = NO');
+
+        % STEP 5.1 modify calibration and validation target locations
+        calfact = .3;
+        Eyelink('command','calibration_samples = 10');
+        Eyelink('command','calibration_sequence = 0,1,2,3,4,5,6,7,8,9');
+        Eyelink('command','calibration_targets = %d,%d %d,%d %d,%d %d,%d %d,%d %d,%d %d,%d %d,%d %d,%d',...
+            p.ptb.width/2,p.ptb.height/2,  p.ptb.width/2,p.ptb.height*calfact,...
+            p.ptb.width/2,p.ptb.height-p.ptb.height*calfact,  p.ptb.width*calfact,p.ptb.height/2,...
+            p.ptb.width-p.ptb.width*calfact,p.ptb.height/2, ...
+            p.ptb.width*calfact,p.ptb.height*calfact, p.ptb.width-p.ptb.width*calfact,p.ptb.height-p.ptb.height*calfact,...
+            p.ptb.width-p.ptb.width*calfact,p.ptb.height*calfact, p.ptb.width*calfact,p.ptb.height-p.ptb.height*calfact);
+        
+        Eyelink('command','validation_samples = 10');
+        Eyelink('command','validation_sequence = 0,1,2,3,4,5,6,7,8,9');
+        Eyelink('command','validation_targets = %d,%d %d,%d %d,%d %d,%d %d,%d %d,%d %d,%d %d,%d %d,%d',...
+            p.ptb.width/2,p.ptb.height/2,  p.ptb.width/2,p.ptb.height*calfact,...
+            p.ptb.width/2,p.ptb.height-p.ptb.height*calfact,  p.ptb.width*calfact,p.ptb.height/2,...
+            p.ptb.width-p.ptb.width*calfact,p.ptb.height/2, ...
+            p.ptb.width*calfact,p.ptb.height*calfact, p.ptb.width-p.ptb.width*calfact,p.ptb.height-p.ptb.height*calfact,...
+            p.ptb.width-p.ptb.width*calfact,p.ptb.height*calfact, p.ptb.width*calfact,p.ptb.height-p.ptb.height*calfact);
+        
+ 
         Eyelink('command', 'select_parser_configuration = 1');
         %what do we want to record
         Eyelink('command', 'file_sample_data  = LEFT,RIGHT,GAZE,HREF,AREA,GAZERES,STATUS,INPUT,HTARGET');
@@ -858,6 +868,9 @@ function [p]=hierarchical_decisions_task(subject, session, run, rule_hierarchica
     function StopEyelink(filename, path_edf)
         if p.ET_dummymode == 0
             try
+                % RESET custom calibration back
+                Eyelink('command', 'generate_default_targets = YES');
+                
                 fprintf('Trying to stop the Eyelink system with StopEyelink\n');
                 Eyelink('StopRecording');
                 WaitSecs(0.5);
